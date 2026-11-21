@@ -1,0 +1,8 @@
+{
+  "screen.pillager_trade.title": "Pillager Trader",
+  "screen.pillager_trade.buy": "Buy",
+  "screen.pillager_trade.close": "Close",
+  "screen.pillager_trade.refresh": "Refresh",
+  "message.pillager_trade.not_enough": "Not enough emeralds.",
+  "message.pillager_trade.bought": "Purchase complete."
+}

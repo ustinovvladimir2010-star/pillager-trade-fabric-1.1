@@ -1,0 +1,8 @@
+{
+  "screen.pillager_trade.title": "Торговец-поборник",
+  "screen.pillager_trade.buy": "Купить",
+  "screen.pillager_trade.close": "Закрыть",
+  "screen.pillager_trade.refresh": "Обновить",
+  "message.pillager_trade.not_enough": "Недостаточно изумрудов.",
+  "message.pillager_trade.bought": "Покупка совершена."
+}
