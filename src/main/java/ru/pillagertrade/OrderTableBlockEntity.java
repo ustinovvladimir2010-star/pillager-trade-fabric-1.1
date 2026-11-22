@@ -46,7 +46,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
     public int getEmeraldCost() { return emeraldCost; }
 
     public boolean startOrder(ServerPlayerEntity player, UUID traderId) {
-        if (!(world instanceof ServerWorld serverWorld) || active || ready || failed) return false;
+        if (!(world instanceof ServerWorld serverWorld) || active || !inventory.getStack(1).isEmpty()) return false;
         ItemStack sample = inventory.getStack(0);
         if (sample.isEmpty()) return false;
         if (!(serverWorld.getEntity(traderId) instanceof PillagerEntity pillager) || !pillager.isAlive()) return false;
