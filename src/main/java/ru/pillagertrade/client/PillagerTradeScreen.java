@@ -110,7 +110,8 @@ public class PillagerTradeScreen extends Screen {
             case 2 -> "Старатель";
             case 3 -> "Алхимик";
             case 4 -> "Механик";
-            case 5 -> "Интендант";
+            case 5 -> "Контрабандист";
+            case 6 -> "Интендант";
             default -> "Контрабандист";
         };
     }
