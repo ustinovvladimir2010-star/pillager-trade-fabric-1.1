@@ -271,6 +271,7 @@ public class TradeState extends PersistentState {
             tag.putBoolean("orderReady", d.orderReady);
             tag.putBoolean("pendingRequest", d.pendingRequest);
             tag.putLong("requestDeadline", d.requestDeadline);
+            tag.putInt("stockVersion", 2);
 
             NbtList stockStages = new NbtList();
             for (Map.Entry<Integer, List<String>> stockEntry : d.stockByStage.entrySet()) {
@@ -308,7 +309,10 @@ public class TradeState extends PersistentState {
             d.pendingRequest = tag.getBoolean("pendingRequest");
             d.requestDeadline = tag.getLong("requestDeadline");
 
-            NbtList stockStages = tag.getList("stockByStage", 10);
+            // Regenerate legacy assortments once so old traders lose unrelated items
+            // and receive the new specialization-focused stock.
+            NbtList stockStages = tag.getInt("stockVersion") >= 2
+                    ? tag.getList("stockByStage", 10) : new NbtList();
             for (int j = 0; j < stockStages.size(); j++) {
                 NbtCompound stageTag = stockStages.getCompound(j);
                 int stage = stageTag.getInt("stage");
