@@ -72,6 +72,7 @@ public class PillagerTradeMod implements ModInitializer {
         out.writeInt(TradeState.daysForNextStage(stage));
         out.writeInt(TradeState.reputationForNextStage(stage));
         List<Item> stock = state.getStock(data, stage);
+        out.writeInt(countEmeralds(player));
         out.writeVarInt(stock.size());
         for (Item item : stock) {
             Identifier id = Registries.ITEM.getId(item);
@@ -112,12 +113,14 @@ public class PillagerTradeMod implements ModInitializer {
             int price = TradeState.priceFor(item, data) * amount;
             if (!removeEmeralds(player, price)) {
                 player.sendMessage(Text.translatable("message.pillager_trade.not_enough"), true);
+                syncEmeraldBalance(player);
                 return;
             }
             giveItem(player, new ItemStack(item, amount));
             data.reputation = Math.min(100, data.reputation + 1);
             state.markDirty();
             player.sendMessage(Text.translatable("message.pillager_trade.bought"), true);
+            syncEmeraldBalance(player);
         } else if ("hire".equals(action)) {
             if (data.hired) {
                 player.sendMessage(Text.literal("Этот поборник уже нанят."), true);
@@ -126,6 +129,7 @@ public class PillagerTradeMod implements ModInitializer {
             int daily = Math.max(2, 12 - data.reputation / 15 - data.strength / 2);
             if (!removeEmeralds(player, daily)) {
                 player.sendMessage(Text.literal("Недостаточно изумрудов для найма."), true);
+                syncEmeraldBalance(player);
                 return;
             }
             data.hired = true;
@@ -133,6 +137,7 @@ public class PillagerTradeMod implements ModInitializer {
             data.reputation = Math.min(100, data.reputation + 2);
             state.markDirty();
             player.sendMessage(Text.literal("Поборник нанят на 1 игровой день. Оплата: " + daily + " изумрудов."), true);
+            syncEmeraldBalance(player);
         } else if ("bargain".equals(action)) {
             int base = 10;
             double chance = MathHelper.clamp(0.65 - Math.max(0, base - offer) * 0.025 + data.reputation * 0.002, 0.05, 0.9);
@@ -152,6 +157,21 @@ public class PillagerTradeMod implements ModInitializer {
             player.sendMessage(Text.literal("Заказ принят. Ожидайте от 5 до 20 игровых дней."), true);
             state.markDirty();
         }
+    }
+
+    private static int countEmeralds(ServerPlayerEntity player) {
+        int found = 0;
+        for (int i = 0; i < player.getInventory().size(); i++) {
+            ItemStack stack = player.getInventory().getStack(i);
+            if (stack.isOf(Items.EMERALD)) found += stack.getCount();
+        }
+        return found;
+    }
+
+    private static void syncEmeraldBalance(ServerPlayerEntity player) {
+        PacketByteBuf out = PacketByteBufs.create();
+        out.writeInt(countEmeralds(player));
+        ServerPlayNetworking.send(player, SYNC, out);
     }
 
     private static boolean removeEmeralds(ServerPlayerEntity player, int amount) {
