@@ -1,7 +1,7 @@
 package ru.pillagertrade;
 
 import net.minecraft.entity.mob.PillagerEntity;
-import net.minecraft.entity.SpawnEggItem;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
