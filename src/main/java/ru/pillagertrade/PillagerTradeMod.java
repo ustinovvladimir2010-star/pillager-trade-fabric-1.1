@@ -6,11 +6,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.entity.mob.PillagerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -66,8 +64,11 @@ public class PillagerTradeMod implements ModInitializer {
         out.writeInt(data.reputation);
         out.writeInt(data.specialization);
         out.writeBoolean(data.hired);
-        out.writeLong(player.getServerWorld().getTime() / 24000L);
-        List<Item> stock = TradeState.getStarterStock();
+        long day = player.getServerWorld().getTime() / 24000L;
+        int stage = TradeState.getStage(day, data.reputation);
+        out.writeLong(day);
+        out.writeInt(stage);
+        List<Item> stock = state.getStock(data, stage);
         out.writeVarInt(stock.size());
         for (Item item : stock) {
             Identifier id = Registries.ITEM.getId(item);
@@ -83,12 +84,22 @@ public class PillagerTradeMod implements ModInitializer {
         TradeState state = TradeState.get(world);
         TradeState.TraderData data = state.get(traderId);
         if (data == null) return;
+        if (!(world.getEntity(traderId) instanceof PillagerEntity pillager) || !pillager.isAlive()
+                || player.squaredDistanceTo(pillager) > 64.0) return;
 
         if ("buy".equals(action)) {
-            Item item = Registries.ITEM.get(new Identifier(itemId));
-            if (item == Items.AIR) return;
+            Identifier identifier;
+            try {
+                identifier = new Identifier(itemId);
+            } catch (IllegalArgumentException exception) {
+                return;
+            }
+            Item item = Registries.ITEM.getOrEmpty(identifier).orElse(Items.AIR);
+            long day = world.getTime() / 24000L;
+            int stage = TradeState.getStage(day, data.reputation);
+            if (item == Items.AIR || !state.getStock(data, stage).contains(item)) return;
+            amount = MathHelper.clamp(amount, 1, Math.min(64, item.getMaxCount()));
             int price = TradeState.priceFor(item, data) * amount;
-            if (offer > 0) price = Math.max(1, offer);
             if (!removeEmeralds(player, price)) {
                 player.sendMessage(Text.translatable("message.pillager_trade.not_enough"), true);
                 return;
@@ -103,8 +114,12 @@ public class PillagerTradeMod implements ModInitializer {
                 player.sendMessage(Text.literal("Недостаточно изумрудов для найма."), true);
                 return;
             }
+            if (data.hired) {
+                player.sendMessage(Text.literal("Этот поборник уже нанят."), true);
+                return;
+            }
             data.hired = true;
-            data.hireUntil = world.getTimeOfDay() + 24000L;
+            data.hireUntil = world.getTime() + 24000L;
             data.reputation = Math.min(100, data.reputation + 2);
             state.markDirty();
             player.sendMessage(Text.literal("Поборник нанят на 1 игровой день. Оплата: " + daily + " изумрудов."), true);
