@@ -99,6 +99,12 @@ public class TradeState extends PersistentState {
         Random random = new Random(seed);
         Collections.shuffle(candidates, random);
         Collections.shuffle(currentTier, random);
+        candidates.sort((a, b) -> Integer.compare(
+                specializationBonus(b, data.specialization),
+                specializationBonus(a, data.specialization)));
+        currentTier.sort((a, b) -> Integer.compare(
+                specializationBonus(b, data.specialization),
+                specializationBonus(a, data.specialization)));
 
         LinkedHashSet<Item> selected = new LinkedHashSet<>();
         int currentTierTarget = Math.min(stage == 1 ? STOCK_SIZE : 3, currentTier.size());
@@ -114,6 +120,32 @@ public class TradeState extends PersistentState {
             ids.add(Registries.ITEM.getId(item).toString());
         }
         return ids;
+    }
+
+    private static int specializationBonus(Item item, int specialization) {
+        String path = Registries.ITEM.getId(item).getPath().toLowerCase(Locale.ROOT);
+        return switch (specialization) {
+            case 0 -> containsAny(path, "bread", "food", "stew", "meat", "fish", "apple",
+                    "carrot", "potato", "wheat", "seed", "plank", "log", "wood", "stone", "torch") ? 3 : 0;
+            case 1 -> containsAny(path, "sword", "axe", "bow", "crossbow", "shield", "helmet",
+                    "chestplate", "leggings", "boots", "armor", "arrow", "weapon") ? 4 : 0;
+            case 2 -> containsAny(path, "ore", "ingot", "raw_", "nugget", "gem", "diamond",
+                    "emerald", "coal", "copper", "iron", "gold", "quartz") ? 4 : 0;
+            case 3 -> containsAny(path, "potion", "bottle", "ingredient", "herb", "brew",
+                    "wart", "dust", "powder") ? 4 : 0;
+            case 4 -> containsAny(path, "redstone", "piston", "repeater", "comparator",
+                    "hopper", "observer", "dispenser", "dropper", "rail", "lever", "gear",
+                    "machine", "circuit") ? 4 : 0;
+            default -> item.getDefaultStack().getRarity() == Rarity.RARE
+                    || item.getDefaultStack().getRarity() == Rarity.EPIC ? 3 : 0;
+        };
+    }
+
+    private static boolean containsAny(String value, String... fragments) {
+        for (String fragment : fragments) {
+            if (value.contains(fragment)) return true;
+        }
+        return false;
     }
 
     /**
