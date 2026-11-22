@@ -99,7 +99,14 @@ public class PillagerTradeMod implements ModInitializer {
             Item item = Registries.ITEM.getOrEmpty(identifier).orElse(Items.AIR);
             long day = world.getTime() / 24000L;
             int stage = TradeState.getStage(day, data.reputation);
-            if (item == Items.AIR || !state.getStock(data, stage).contains(item)) return;
+            boolean offeredByTrader = false;
+            for (int unlockedStage = 1; unlockedStage <= stage; unlockedStage++) {
+                if (state.getStock(data, unlockedStage).contains(item)) {
+                    offeredByTrader = true;
+                    break;
+                }
+            }
+            if (item == Items.AIR || !offeredByTrader) return;
             amount = MathHelper.clamp(amount, 1, Math.min(64, item.getMaxCount()));
             int price = TradeState.priceFor(item, data) * amount;
             if (!removeEmeralds(player, price)) {
@@ -111,13 +118,13 @@ public class PillagerTradeMod implements ModInitializer {
             state.markDirty();
             player.sendMessage(Text.translatable("message.pillager_trade.bought"), true);
         } else if ("hire".equals(action)) {
+            if (data.hired) {
+                player.sendMessage(Text.literal("Этот поборник уже нанят."), true);
+                return;
+            }
             int daily = Math.max(2, 12 - data.reputation / 15 - data.strength / 2);
             if (!removeEmeralds(player, daily)) {
                 player.sendMessage(Text.literal("Недостаточно изумрудов для найма."), true);
-                return;
-            }
-            if (data.hired) {
-                player.sendMessage(Text.literal("Этот поборник уже нанят."), true);
                 return;
             }
             data.hired = true;
