@@ -3,7 +3,7 @@ name: Build Pillager Trade Mod
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: ["main", "feature/trade-progression"]
 
 jobs:
   build:
