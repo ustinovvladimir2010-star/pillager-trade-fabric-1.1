@@ -28,7 +28,7 @@ public class TradeState extends PersistentState {
     public TraderData getOrCreate(PillagerEntity entity) {
         return traders.computeIfAbsent(entity.getUuid(), id -> {
             TraderData data = new TraderData();
-            data.specialization = entity.getRandom().nextInt(6);
+            data.specialization = entity.getRandom().nextInt(7);
             data.strength = entity.getRandom().nextInt(5) + 1;
             data.createdDay = entity.getWorld().getTime() / 24000L;
             markDirty();
@@ -84,61 +84,106 @@ public class TradeState extends PersistentState {
 
     private List<String> generateStockIds(TraderData data, int stage) {
         List<Item> candidates = new ArrayList<>();
+        List<Item> moddedCandidates = new ArrayList<>();
+
         for (Item item : Registries.ITEM) {
             if (item == Items.AIR || item instanceof SpawnEggItem) continue;
-            if (getItemTier(item) <= stage) candidates.add(item);
-        }
-
-        // Prefer some items introduced at this stage, while allowing earlier-stage staples.
-        List<Item> currentTier = new ArrayList<>();
-        for (Item item : candidates) {
-            if (getItemTier(item) == stage) currentTier.add(item);
+            if (getItemTier(item) > stage) continue;
+            if (!matchesSpecialization(item, data.specialization)) continue;
+            candidates.add(item);
+            if (!Registries.ITEM.getId(item).getNamespace().equals("minecraft")) {
+                moddedCandidates.add(item);
+            }
         }
 
         long seed = data.seed ^ (0x9E3779B97F4A7C15L * stage);
         Random random = new Random(seed);
         Collections.shuffle(candidates, random);
-        Collections.shuffle(currentTier, random);
-        candidates.sort((a, b) -> Integer.compare(
-                specializationBonus(b, data.specialization),
-                specializationBonus(a, data.specialization)));
-        currentTier.sort((a, b) -> Integer.compare(
-                specializationBonus(b, data.specialization),
-                specializationBonus(a, data.specialization)));
+        Collections.shuffle(moddedCandidates, random);
 
+        // Keep the assortment focused, but guarantee a modded item when one exists
+        // for this specialization and progression stage.
         LinkedHashSet<Item> selected = new LinkedHashSet<>();
-        int currentTierTarget = Math.min(stage == 1 ? STOCK_SIZE : 3, currentTier.size());
-        for (int i = 0; i < currentTierTarget; i++) selected.add(currentTier.get(i));
+        if (!moddedCandidates.isEmpty()) selected.add(moddedCandidates.get(0));
 
+        // Prefer items belonging to the current tier, then fill with earlier staples.
+        candidates.sort((a, b) -> Integer.compare(getItemTier(b), getItemTier(a)));
         for (Item item : candidates) {
             if (selected.size() >= STOCK_SIZE) break;
             selected.add(item);
         }
 
-        List<String> ids = new ArrayList<>();
-        for (Item item : selected) {
-            ids.add(Registries.ITEM.getId(item).toString());
+        // Some modpacks have very few items in a narrow category. Fill remaining
+        // slots with sensible vanilla staples rather than unrelated modded clutter.
+        if (selected.size() < STOCK_SIZE) {
+            List<Item> fallback = new ArrayList<>();
+            for (Item item : Registries.ITEM) {
+                if (item == Items.AIR || item instanceof SpawnEggItem || selected.contains(item)) continue;
+                if (!Registries.ITEM.getId(item).getNamespace().equals("minecraft")) continue;
+                if (getItemTier(item) <= stage && isUsefulFallback(item)) fallback.add(item);
+            }
+            Collections.shuffle(fallback, random);
+            for (Item item : fallback) {
+                if (selected.size() >= STOCK_SIZE) break;
+                selected.add(item);
+            }
         }
+
+        List<String> ids = new ArrayList<>();
+        for (Item item : selected) ids.add(Registries.ITEM.getId(item).toString());
         return ids;
     }
 
-    private static int specializationBonus(Item item, int specialization) {
+    private static boolean matchesSpecialization(Item item, int specialization) {
         String path = Registries.ITEM.getId(item).getPath().toLowerCase(Locale.ROOT);
+        String name = item.getName().getString().toLowerCase(Locale.ROOT);
+
+        // Construction materials are classified first so waxed copper blocks,
+        // concrete and decorative blocks never leak into combat/alchemy stock.
+        boolean building = containsAny(path, "block", "concrete", "terracotta", "brick",
+                "planks", "log", "wood", "stone", "copper", "glass", "wool", "slab",
+                "stairs", "wall", "fence", "door", "trapdoor", "tile", "marble",
+                "limestone", "basalt", "deepslate", "sandstone", "quartz_block",
+                "clay", "scaffolding", "pane", "carpet")
+                || containsAny(name, "concrete", "waxed", "building", "bricks");
+        boolean food = containsAny(path, "bread", "food", "stew", "meat", "fish",
+                "apple", "carrot", "potato", "wheat", "seed", "cookie", "berry",
+                "berries", "melon", "pumpkin", "beetroot", "sugar", "honey");
+        boolean combat = containsAny(path, "sword", "axe", "bow", "crossbow", "shield",
+                "helmet", "chestplate", "leggings", "boots", "armor", "arrow",
+                "weapon", "trident", "mace");
+        boolean mining = containsAny(path, "ore", "ingot", "raw_", "nugget", "gem",
+                "diamond", "emerald", "coal", "iron", "gold", "lapis", "quartz",
+                "amethyst", "copper_ingot", "ancient_debris");
+        boolean alchemy = containsAny(path, "potion", "bottle", "ingredient", "herb",
+                "brew", "wart", "dust", "powder", "flower", "sugar", "fermented",
+                "phantom_membrane", "blaze_rod", "magma_cream", "ghast_tear",
+                "spider_eye", "slime_ball");
+        boolean machinery = containsAny(path, "redstone", "piston", "repeater",
+                "comparator", "hopper", "observer", "dispenser", "dropper", "rail",
+                "lever", "button", "pressure_plate", "gear", "machine", "circuit",
+                "copper_bulb", "lightning_rod", "target");
+
         return switch (specialization) {
-            case 0 -> containsAny(path, "bread", "food", "stew", "meat", "fish", "apple",
-                    "carrot", "potato", "wheat", "seed", "plank", "log", "wood", "stone", "torch") ? 3 : 0;
-            case 1 -> containsAny(path, "sword", "axe", "bow", "crossbow", "shield", "helmet",
-                    "chestplate", "leggings", "boots", "armor", "arrow", "weapon") ? 4 : 0;
-            case 2 -> containsAny(path, "ore", "ingot", "raw_", "nugget", "gem", "diamond",
-                    "emerald", "coal", "copper", "iron", "gold", "quartz") ? 4 : 0;
-            case 3 -> containsAny(path, "potion", "bottle", "ingredient", "herb", "brew",
-                    "wart", "dust", "powder") ? 4 : 0;
-            case 4 -> containsAny(path, "redstone", "piston", "repeater", "comparator",
-                    "hopper", "observer", "dispenser", "dropper", "rail", "lever", "gear",
-                    "machine", "circuit") ? 4 : 0;
-            default -> item.getDefaultStack().getRarity() == Rarity.RARE
-                    || item.getDefaultStack().getRarity() == Rarity.EPIC ? 3 : 0;
+            case 0 -> food || containsAny(path, "torch", "lantern", "bed", "bucket", "campfire");
+            case 1 -> combat;
+            case 2 -> mining;
+            case 3 -> alchemy;
+            case 4 -> machinery;
+            case 6 -> {
+                boolean modded = !Registries.ITEM.getId(item).getNamespace().equals("minecraft");
+                Rarity rarity = item.getDefaultStack().getRarity();
+                yield modded || rarity == Rarity.UNCOMMON || rarity == Rarity.RARE || rarity == Rarity.EPIC;
+            }
+            case 5 -> building;
+            default -> false;
         };
+    }
+
+    private static boolean isUsefulFallback(Item item) {
+        String path = Registries.ITEM.getId(item).getPath().toLowerCase(Locale.ROOT);
+        return containsAny(path, "bread", "torch", "planks", "cobblestone", "stone",
+                "stick", "coal", "iron_ingot", "arrow", "leather", "string", "glass");
     }
 
     private static boolean containsAny(String value, String... fragments) {
@@ -154,7 +199,8 @@ public class TradeState extends PersistentState {
      */
     private static int getItemTier(Item item) {
         int tier = 1;
-        if (!Registries.ITEM.getId(item).getNamespace().equals("minecraft")) tier++;
+        // Do not penalize an item merely because it comes from a mod:
+        // modded items must be able to appear from the first trade stage.
         if (item.getMaxDamage() > 0) tier++;
         if (item.getMaxDamage() > 500) tier++;
         if (item.getMaxCount() <= 16) tier++;
