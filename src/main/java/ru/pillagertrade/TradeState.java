@@ -248,6 +248,18 @@ public class TradeState extends PersistentState {
         markDirty();
     }
 
+    public static int orderPriceFor(Item item) {
+        int base = 3;
+        if (item.getMaxDamage() > 0) base += 5;
+        if (item.getMaxDamage() > 500) base += 5;
+        if (item.getMaxCount() <= 16) base += 3;
+        Rarity rarity = item.getDefaultStack().getRarity();
+        if (rarity == Rarity.UNCOMMON) base += 3;
+        else if (rarity == Rarity.RARE) base += 7;
+        else if (rarity == Rarity.EPIC) base += 12;
+        return Math.max(2, base);
+    }
+
     public static int priceFor(Item item, TraderData data) {
         int base = 3;
         if (item.getMaxDamage() > 0) base += 5;
