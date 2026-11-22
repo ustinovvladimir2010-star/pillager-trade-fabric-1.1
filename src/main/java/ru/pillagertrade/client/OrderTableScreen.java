@@ -44,8 +44,14 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
-        context.fill(x, y, x + backgroundWidth, y + backgroundHeight, 0xEE242424);
-        context.drawBorder(x, y, backgroundWidth, backgroundHeight, 0xFF8B7653);
+        context.fill(x, y, x + backgroundWidth, y + backgroundHeight, 0xFFC6C6C6);
+        context.drawBorder(x, y, backgroundWidth, backgroundHeight, 0xFF555555);
+
+        // Light vanilla-style work areas behind the sample and delivery slots.
+        context.fill(x + 39, y + 30, x + 67, y + 58, 0xFFE2E2E2);
+        context.drawBorder(x + 39, y + 30, 28, 28, 0xFF777777);
+        context.fill(x + 111, y + 12, x + 169, y + 70, 0xFFE2E2E2);
+        context.drawBorder(x + 111, y + 12, 58, 58, 0xFF777777);
         context.drawText(textRenderer, "Образец", x + 24, y + 20, 0xFFFFFF, false);
         context.drawText(textRenderer, "Добыча", x + 142, y + 5, 0xFFFFFF, false);
         context.drawText(textRenderer, "Поборники поблизости:", x + 8, y + 60, 0xE4C98A, false);
