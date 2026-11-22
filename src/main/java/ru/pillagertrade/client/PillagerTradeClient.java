@@ -21,12 +21,22 @@ public class PillagerTradeClient implements ClientModInitializer {
             int stage = buf.readInt();
             int nextStageDay = buf.readInt();
             int nextStageReputation = buf.readInt();
+            int emeraldBalance = buf.readInt();
             int count = buf.readVarInt();
             List<PillagerTradeScreen.StockEntry> stock = new ArrayList<>();
             for (int i = 0; i < count; i++) {
                 stock.add(new PillagerTradeScreen.StockEntry(buf.readString(128), buf.readString(128), buf.readInt()));
             }
-            client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stage, nextStageDay, nextStageReputation, stock)));
+            client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stage, nextStageDay, nextStageReputation, emeraldBalance, stock)));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(PillagerTradeMod.SYNC, (client, handler, buf, responseSender) -> {
+            int emeraldBalance = buf.readInt();
+            client.execute(() -> {
+                if (client.currentScreen instanceof PillagerTradeScreen screen) {
+                    screen.setEmeraldBalance(emeraldBalance);
+                }
+            });
         });
     }
 }
