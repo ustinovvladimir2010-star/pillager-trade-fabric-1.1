@@ -19,12 +19,14 @@ public class PillagerTradeClient implements ClientModInitializer {
             boolean hired = buf.readBoolean();
             long day = buf.readLong();
             int stage = buf.readInt();
+            int nextStageDay = buf.readInt();
+            int nextStageReputation = buf.readInt();
             int count = buf.readVarInt();
             List<PillagerTradeScreen.StockEntry> stock = new ArrayList<>();
             for (int i = 0; i < count; i++) {
                 stock.add(new PillagerTradeScreen.StockEntry(buf.readString(128), buf.readString(128), buf.readInt()));
             }
-            client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stage, stock)));
+            client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stage, nextStageDay, nextStageReputation, stock)));
         });
     }
 }
