@@ -5,6 +5,8 @@ import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -32,6 +34,14 @@ public class OrderTableBlock extends Block implements BlockEntityProvider {
             }
         }
         return ActionResult.success(world.isClient);
+    }
+
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        if (type == PillagerTradeMod.ORDER_TABLE_ENTITY) {
+            return (tickWorld, pos, blockState, entity) -> ((OrderTableBlockEntity) entity).tick();
+        }
+        return null;
     }
 
     @Override
