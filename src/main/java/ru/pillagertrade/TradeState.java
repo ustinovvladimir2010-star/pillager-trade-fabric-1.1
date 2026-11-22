@@ -41,6 +41,10 @@ public class TradeState extends PersistentState {
         return traders.get(id);
     }
 
+    public Map<UUID, TraderData> getTraders() {
+        return Collections.unmodifiableMap(traders);
+    }
+
     public static int getStage(long worldDay, int reputation) {
         int stage = 1;
         for (int i = 1; i < STAGE_DAYS.length; i++) {
@@ -234,7 +238,11 @@ public class TradeState extends PersistentState {
     public void onNewDay(ServerWorld world) {
         long day = world.getTime() / 24000L;
         for (TraderData data : traders.values()) {
-            if (data.hired && world.getTime() >= data.hireUntil) data.hired = false;
+            if (data.hired && world.getTime() >= data.hireUntil) {
+                data.hired = false;
+                data.hireOwner = null;
+                data.hireUntil = 0L;
+            }
             if (data.orderItem != null && day >= data.orderDueDay) data.orderReady = true;
             if (data.pendingRequest && day >= data.requestDeadline) {
                 data.reputation = Math.max(0, data.reputation - 8);
@@ -296,6 +304,7 @@ public class TradeState extends PersistentState {
             tag.putLong("seed", d.seed);
             tag.putBoolean("hired", d.hired);
             tag.putLong("hireUntil", d.hireUntil);
+            if (d.hireOwner != null) tag.putUuid("hireOwner", d.hireOwner);
             tag.putString("orderItem", d.orderItem == null ? "" : d.orderItem);
             tag.putLong("orderDueDay", d.orderDueDay);
             tag.putBoolean("orderReady", d.orderReady);
@@ -333,6 +342,7 @@ public class TradeState extends PersistentState {
             d.seed = tag.contains("seed") ? tag.getLong("seed") : tag.getUuid("id").getMostSignificantBits();
             d.hired = tag.getBoolean("hired");
             d.hireUntil = tag.getLong("hireUntil");
+            if (tag.containsUuid("hireOwner")) d.hireOwner = tag.getUuid("hireOwner");
             d.orderItem = tag.getString("orderItem").isEmpty() ? null : tag.getString("orderItem");
             d.orderDueDay = tag.getLong("orderDueDay");
             d.orderReady = tag.getBoolean("orderReady");
@@ -363,6 +373,7 @@ public class TradeState extends PersistentState {
         public long createdDay = 0;
         public long seed = new Random().nextLong();
         public boolean hired = false;
+        public UUID hireOwner;
         public long hireUntil = 0;
         public String orderItem;
         public long orderDueDay;
