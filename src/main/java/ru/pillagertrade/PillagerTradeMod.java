@@ -68,6 +68,8 @@ public class PillagerTradeMod implements ModInitializer {
         int stage = TradeState.getStage(day, data.reputation);
         out.writeLong(day);
         out.writeInt(stage);
+        out.writeInt(TradeState.daysForNextStage(stage));
+        out.writeInt(TradeState.reputationForNextStage(stage));
         List<Item> stock = state.getStock(data, stage);
         out.writeVarInt(stock.size());
         for (Item item : stock) {
