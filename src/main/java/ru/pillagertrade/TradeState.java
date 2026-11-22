@@ -124,12 +124,15 @@ public class TradeState extends PersistentState {
     private static boolean matchesSpecialization(Item item, int specialization) {
         String path = Registries.ITEM.getId(item).getPath().toLowerCase(Locale.ROOT);
 
-        // Block items belong to the quartermaster, never to alchemists or combat traders.
-        boolean building = item instanceof BlockItem || containsAny(path, "concrete",
-                "terracotta", "planks", "log", "wood", "stone", "copper_block",
-                "glass", "wool", "slab", "stairs", "wall", "fence", "door",
-                "trapdoor", "tile", "marble", "limestone", "basalt", "deepslate",
-                "sandstone", "quartz_block", "clay", "scaffolding", "pane", "carpet");
+        // Ore blocks stay with the prospector; functional redstone blocks stay with the mechanic.
+        // All other block items (including doors and concrete powder) go to the quartermaster.
+        boolean oreBlock = containsAny(path, "ore", "raw_");
+        boolean building = (item instanceof BlockItem && !oreBlock && !machinery)
+                || (containsAny(path, "concrete", "terracotta", "planks", "log", "wood",
+                "stone", "copper_block", "glass", "wool", "slab", "stairs", "wall",
+                "fence", "door", "trapdoor", "tile", "marble", "limestone", "basalt",
+                "deepslate", "sandstone", "quartz_block", "clay", "scaffolding", "pane",
+                "carpet") && !oreBlock && !machinery);
 
         // Explicit categories; avoid broad words such as "powder", "dust" or "flower":
         // they match unrelated items like concrete powder and decorative blocks.
@@ -144,7 +147,7 @@ public class TradeState extends PersistentState {
                 "amethyst", "ancient_debris");
         boolean alchemy = containsAny(path, "potion", "splash_potion", "lingering_potion",
                 "glass_bottle", "nether_wart", "blaze_powder", "blaze_rod",
-                "glowstone_dust", "redstone", "fermented_spider_eye", "magma_cream",
+                "glowstone_dust", "fermented_spider_eye", "magma_cream",
                 "ghast_tear", "spider_eye", "slime_ball", "phantom_membrane",
                 "dragon_breath", "rabbit_foot", "turtle_helmet");
         boolean machinery = containsAny(path, "redstone", "piston", "repeater",
@@ -155,8 +158,9 @@ public class TradeState extends PersistentState {
         // Upgrade components and smithing templates are late-game materials,
         // not ordinary weapons for the early weapon trader.
         boolean upgradeMaterial = containsAny(path, "upgrade", "smithing_template",
-                "netherite", "weapon_augment", "weapon_upgrade", "reforging",
-                "awakening", "mythic_core", "legendary_core");
+                "smithing", "template", "netherite", "weapon_augment", "weapon_upgrade",
+                "augment", "reforg", "reinforce", "awakening", "infusion",
+                "mythic_core", "legendary_core", "endgame_component");
 
         if (specialization != 6 && building) return false;
         if (upgradeMaterial && specialization != 5) return false;
@@ -170,7 +174,8 @@ public class TradeState extends PersistentState {
             case 5 -> {
                 boolean modded = !Registries.ITEM.getId(item).getNamespace().equals("minecraft");
                 Rarity rarity = item.getDefaultStack().getRarity();
-                yield modded || rarity == Rarity.UNCOMMON || rarity == Rarity.RARE || rarity == Rarity.EPIC;
+                yield upgradeMaterial || modded || rarity == Rarity.UNCOMMON
+                        || rarity == Rarity.RARE || rarity == Rarity.EPIC;
             }
             case 6 -> building;
             default -> false;
@@ -194,9 +199,10 @@ public class TradeState extends PersistentState {
 
         // Hard gates for end-game progression materials, regardless of rarity or stack size.
         if (containsAny(path, "netherite", "ancient_debris", "smithing_template",
-                "upgrade", "weapon_augment", "weapon_upgrade", "reforging",
-                "awakening", "mythic", "legendary", "dragonsteel", "chaos",
-                "awakened", "ultimate")) return 5;
+                "smithing", "template", "upgrade", "weapon_augment", "weapon_upgrade",
+                "augment", "reforg", "reinforce", "awakening", "infusion",
+                "mythic", "legendary", "dragonsteel", "chaos", "awakened",
+                "ultimate", "endgame_component")) return 5;
 
         int tier = 1;
         if (containsAny(path, "diamond", "obsidian", "reinforced", "steel", "titanium")) tier = 3;
@@ -206,7 +212,9 @@ public class TradeState extends PersistentState {
         // Basic modded materials can still appear early and keep every stage varied.
         if (modded && tier == 1 && !containsAny(path, "wood", "stone", "cobble",
                 "flint", "copper", "iron", "coal", "leather", "string", "cloth",
-                "fiber", "bread", "food", "herb", "berry", "wheat", "torch")) {
+                "fiber", "bread", "food", "herb", "berry", "wheat", "torch",
+                "cobble", "plank", "log", "stick", "flour", "salt", "copper_ore",
+                "iron_ore", "tin_ore", "raw_copper", "raw_iron")) {
             tier = 3;
         }
 
