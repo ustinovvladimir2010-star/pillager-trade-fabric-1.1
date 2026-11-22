@@ -113,22 +113,8 @@ public class TradeState extends PersistentState {
             selected.add(item);
         }
 
-        // Some modpacks have very few items in a narrow category. Fill remaining
-        // slots with sensible vanilla staples rather than unrelated modded clutter.
-        if (selected.size() < STOCK_SIZE) {
-            List<Item> fallback = new ArrayList<>();
-            for (Item item : Registries.ITEM) {
-                if (item == Items.AIR || item instanceof SpawnEggItem || selected.contains(item)) continue;
-                if (!Registries.ITEM.getId(item).getNamespace().equals("minecraft")) continue;
-                if (getItemTier(item) <= stage && isUsefulFallback(item)) fallback.add(item);
-            }
-            Collections.shuffle(fallback, random);
-            for (Item item : fallback) {
-                if (selected.size() >= STOCK_SIZE) break;
-                selected.add(item);
-            }
-        }
-
+        // If a specialization has a small item pool, show fewer offers instead
+        // of padding the list with unrelated goods.
         List<String> ids = new ArrayList<>();
         for (Item item : selected) ids.add(Registries.ITEM.getId(item).toString());
         return ids;
@@ -178,12 +164,6 @@ public class TradeState extends PersistentState {
             case 6 -> building;
             default -> false;
         };
-    }
-
-    private static boolean isUsefulFallback(Item item) {
-        String path = Registries.ITEM.getId(item).getPath().toLowerCase(Locale.ROOT);
-        return containsAny(path, "bread", "torch", "planks", "cobblestone", "stone",
-                "stick", "coal", "iron_ingot", "arrow", "leather", "string", "glass");
     }
 
     private static boolean containsAny(String value, String... fragments) {
