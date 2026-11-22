@@ -170,12 +170,12 @@ public class TradeState extends PersistentState {
             case 2 -> mining;
             case 3 -> alchemy;
             case 4 -> machinery;
-            case 6 -> {
+            case 5 -> {
                 boolean modded = !Registries.ITEM.getId(item).getNamespace().equals("minecraft");
                 Rarity rarity = item.getDefaultStack().getRarity();
                 yield modded || rarity == Rarity.UNCOMMON || rarity == Rarity.RARE || rarity == Rarity.EPIC;
             }
-            case 5 -> building;
+            case 6 -> building;
             default -> false;
         };
     }
