@@ -7,10 +7,13 @@ import ru.pillagertrade.PillagerTradeMod;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import ru.pillagertrade.OrderTableScreenHandler;
 
 public class PillagerTradeClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        HandledScreens.register(PillagerTradeMod.ORDER_TABLE_SCREEN, OrderTableScreen::new);
         ClientPlayNetworking.registerGlobalReceiver(PillagerTradeMod.OPEN_SCREEN, (client, handler, buf, responseSender) -> {
             UUID trader = buf.readUuid();
             String name = buf.readString(128);
