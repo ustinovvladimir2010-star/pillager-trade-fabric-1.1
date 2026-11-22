@@ -6,6 +6,10 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.entity.mob.PillagerEntity;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.util.math.Box;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -91,9 +95,10 @@ public class PillagerTradeMod implements ModInitializer {
         });
 
         ServerTickEvents.END_WORLD_TICK.register(world -> {
+            ServerWorld serverWorld = (ServerWorld) world;
+            tickHiredGuards(serverWorld);
             if (world.getTime() % 24000L == 0L) {
-                TradeState state = TradeState.get((ServerWorld) world);
-                state.onNewDay((ServerWorld) world);
+                TradeState.get(serverWorld).onNewDay(serverWorld);
             }
         });
     }
@@ -175,6 +180,7 @@ public class PillagerTradeMod implements ModInitializer {
                 return;
             }
             data.hired = true;
+            data.hireOwner = player.getUuid();
             data.hireUntil = world.getTime() + 24000L;
             data.reputation = Math.min(100, data.reputation + 2);
             state.markDirty();
@@ -198,6 +204,61 @@ public class PillagerTradeMod implements ModInitializer {
             data.orderDueDay = world.getTime() / 24000L + 5 + world.getRandom().nextInt(16);
             player.sendMessage(Text.literal("Заказ принят. Ожидайте от 5 до 20 игровых дней."), true);
             state.markDirty();
+        }
+    }
+
+
+    /**
+     * Keeps hired pillagers assigned to their owner and makes them defend the owner
+     * against nearby hostile mobs. All decisions are server-side.
+     */
+    private static void tickHiredGuards(ServerWorld world) {
+        TradeState state = TradeState.get(world);
+        for (var entry : state.getTraders().entrySet()) {
+            TradeState.TraderData data = entry.getValue();
+            if (!data.hired || data.hireOwner == null) continue;
+
+            if (!(world.getEntity(entry.getKey()) instanceof PillagerEntity guard) || !guard.isAlive()) {
+                continue;
+            }
+            if (!(world.getPlayerByUuid(data.hireOwner) instanceof ServerPlayerEntity owner)
+                    || !owner.isAlive()) {
+                continue;
+            }
+
+            // Look for hostile mobs threatening the owner or the guard.
+            Box searchArea = owner.getBoundingBox().expand(12.0);
+            List<HostileEntity> threats = world.getEntitiesByClass(HostileEntity.class, searchArea,
+                    hostile -> hostile.isAlive() && hostile != guard);
+            HostileEntity nearest = null;
+            double nearestDistance = Double.MAX_VALUE;
+            for (HostileEntity hostile : threats) {
+                double distance = guard.squaredDistanceTo(hostile);
+                boolean threateningOwner = hostile.getTarget() == owner
+                        || hostile.squaredDistanceTo(owner) <= 36.0;
+                if (threateningOwner && distance < nearestDistance) {
+                    nearest = hostile;
+                    nearestDistance = distance;
+                }
+            }
+
+            if (nearest != null) {
+                if (guard.getTarget() != nearest) guard.setTarget(nearest);
+            } else {
+                LivingEntity currentTarget = guard.getTarget();
+                if (currentTarget instanceof HostileEntity && currentTarget.isAlive()) {
+                    // Let the pillager finish its current fight before returning.
+                    continue;
+                }
+                if (currentTarget != null) guard.setTarget(null);
+
+                double distanceToOwner = guard.squaredDistanceTo(owner);
+                if (distanceToOwner > 25.0) {
+                    guard.getNavigation().startMovingTo(owner, 1.15);
+                } else if (distanceToOwner < 9.0 && guard.getNavigation().isFollowingPath()) {
+                    guard.getNavigation().stop();
+                }
+            }
         }
     }
 
