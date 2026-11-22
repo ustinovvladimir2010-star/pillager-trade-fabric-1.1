@@ -36,6 +36,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
 
     public OrderTableBlockEntity(BlockPos pos, BlockState state) {
         super(PillagerTradeMod.ORDER_TABLE_ENTITY, pos, state);
+        inventory.addListener(changed -> markDirty());
     }
 
     public SimpleInventory getInventory() { return inventory; }
