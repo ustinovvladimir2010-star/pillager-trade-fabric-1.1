@@ -143,9 +143,10 @@ public class TradeState extends PersistentState {
         boolean food = containsAny(path, "bread", "food", "stew", "meat", "fish",
                 "apple", "carrot", "potato", "wheat", "seed", "cookie", "berry",
                 "berries", "melon", "pumpkin", "beetroot", "honey_bottle");
-        boolean combat = containsAny(path, "sword", "battle_axe", "war_axe", "bow",
+        boolean combat = containsAny(path, "sword", "battle_axe", "war_axe",
                 "crossbow", "shield", "helmet", "chestplate", "leggings", "boots",
-                "armor", "armour", "trident", "mace");
+                "armor", "armour", "trident", "mace")
+                || path.equals("bow") || path.endsWith("_bow");
         boolean mining = containsAny(path, "ore", "ingot", "raw_", "nugget", "gem",
                 "diamond", "emerald", "coal", "iron", "gold", "lapis", "quartz",
                 "amethyst", "ancient_debris");
@@ -288,7 +289,7 @@ public class TradeState extends PersistentState {
             tag.putBoolean("orderReady", d.orderReady);
             tag.putBoolean("pendingRequest", d.pendingRequest);
             tag.putLong("requestDeadline", d.requestDeadline);
-            tag.putInt("stockVersion", 4);
+            tag.putInt("stockVersion", 5);
 
             NbtList stockStages = new NbtList();
             for (Map.Entry<Integer, List<String>> stockEntry : d.stockByStage.entrySet()) {
@@ -328,7 +329,7 @@ public class TradeState extends PersistentState {
 
             // Regenerate legacy assortments once so old traders lose unrelated items
             // and receive the new specialization-focused stock.
-            NbtList stockStages = tag.getInt("stockVersion") >= 4
+            NbtList stockStages = tag.getInt("stockVersion") >= 5
                     ? tag.getList("stockByStage", 10) : new NbtList();
             for (int j = 0; j < stockStages.size(); j++) {
                 NbtCompound stageTag = stockStages.getCompound(j);
