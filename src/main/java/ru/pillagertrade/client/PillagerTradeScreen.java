@@ -20,11 +20,14 @@ public class PillagerTradeScreen extends Screen {
     private final boolean hired;
     private final long day;
     private final int stage;
+    private final int nextStageDay;
+    private final int nextStageReputation;
     private final List<StockEntry> stock;
     private int selected = 0;
 
     public PillagerTradeScreen(UUID trader, String name, int reputation, int specialization,
-                               boolean hired, long day, int stage, List<StockEntry> stock) {
+                               boolean hired, long day, int stage, int nextStageDay,
+                               int nextStageReputation, List<StockEntry> stock) {
         super(Text.translatable("screen.pillager_trade.title"));
         this.trader = trader;
         this.traderName = name;
@@ -33,28 +36,30 @@ public class PillagerTradeScreen extends Screen {
         this.hired = hired;
         this.day = day;
         this.stage = stage;
+        this.nextStageDay = nextStageDay;
+        this.nextStageReputation = nextStageReputation;
         this.stock = stock;
     }
 
     @Override
     protected void init() {
         int left = (width - 360) / 2;
-        int top = (height - 280) / 2;
+        int top = (height - 300) / 2;
 
         for (int i = 0; i < Math.min(8, stock.size()); i++) {
             final int index = i;
             addDrawableChild(ButtonWidget.builder(
                     Text.literal(stock.get(i).name + " — " + stock.get(i).price + " э"),
                     b -> selected = index)
-                    .dimensions(left + 12, top + 58 + i * 19, 336, 18).build());
+                    .dimensions(left + 12, top + 74 + i * 19, 336, 18).build());
         }
 
         addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.buy"), b -> buySelected())
-                .dimensions(left + 12, top + 246, 100, 20).build());
+                .dimensions(left + 12, top + 272, 100, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Нанять: 1 день"), b -> send("hire", "", 1, 0))
-                .dimensions(left + 120, top + 246, 112, 20).build());
+                .dimensions(left + 120, top + 272, 112, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.close"), b -> close())
-                .dimensions(left + 240, top + 246, 108, 20).build());
+                .dimensions(left + 240, top + 272, 108, 20).build());
     }
 
     private void buySelected() {
@@ -77,19 +82,23 @@ public class PillagerTradeScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         renderBackground(context);
         int left = (width - 360) / 2;
-        int top = (height - 280) / 2;
-        context.fill(left, top, left + 360, top + 280, 0xEE242424);
-        context.drawBorder(left, top, 360, 280, 0xFF8B7653);
+        int top = (height - 300) / 2;
+        context.fill(left, top, left + 360, top + 300, 0xEE242424);
+        context.drawBorder(left, top, 360, 300, 0xFF8B7653);
         context.drawText(textRenderer, traderName, left + 12, top + 10, 0xFFFFFF, false);
         context.drawText(textRenderer, "Репутация: " + reputation + " | День мира: " + day,
                 left + 12, top + 26, 0xBFBFBF, false);
         context.drawText(textRenderer, "Этап торговли: " + stage + " / 5",
                 left + 12, top + 42, 0xE4C98A, false);
+        String progress = stage >= 5 ? "Достигнут максимальный этап"
+                : "Для этапа " + (stage + 1) + ": день " + nextStageDay
+                + " и репутация " + nextStageReputation;
+        context.drawText(textRenderer, progress, left + 12, top + 57, 0xBFBFBF, false);
         context.drawText(textRenderer, "Специализация: " + specializationName(specialization),
-                left + 12, top + 216, 0xD8C89A, false);
+                left + 12, top + 237, 0xD8C89A, false);
         if (hired) {
             context.drawText(textRenderer, "Этот поборник уже нанят",
-                    left + 12, top + 230, 0x55FF55, false);
+                    left + 12, top + 251, 0x55FF55, false);
         }
         super.render(context, mouseX, mouseY, delta);
     }
