@@ -127,6 +127,10 @@ public class TradeState extends PersistentState {
         // Ore blocks stay with the prospector; functional redstone blocks stay with the mechanic.
         // All other block items (including doors and concrete powder) go to the quartermaster.
         boolean oreBlock = containsAny(path, "ore", "raw_");
+        boolean machinery = containsAny(path, "redstone", "piston", "repeater",
+                "comparator", "hopper", "observer", "dispenser", "dropper", "rail",
+                "lever", "button", "pressure_plate", "gear", "machine", "circuit",
+                "copper_bulb", "lightning_rod", "target");
         boolean building = (item instanceof BlockItem && !oreBlock && !machinery)
                 || (containsAny(path, "concrete", "terracotta", "planks", "log", "wood",
                 "stone", "copper_block", "glass", "wool", "slab", "stairs", "wall",
@@ -150,10 +154,6 @@ public class TradeState extends PersistentState {
                 "glowstone_dust", "fermented_spider_eye", "magma_cream",
                 "ghast_tear", "spider_eye", "slime_ball", "phantom_membrane",
                 "dragon_breath", "rabbit_foot", "turtle_helmet");
-        boolean machinery = containsAny(path, "redstone", "piston", "repeater",
-                "comparator", "hopper", "observer", "dispenser", "dropper", "rail",
-                "lever", "button", "pressure_plate", "gear", "machine", "circuit",
-                "copper_bulb", "lightning_rod", "target");
 
         // Upgrade components and smithing templates are late-game materials,
         // not ordinary weapons for the early weapon trader.
