@@ -3,6 +3,7 @@ package ru.pillagertrade;
 import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.item.SpawnEggItem;
 import net.minecraft.item.Item;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -122,37 +123,47 @@ public class TradeState extends PersistentState {
 
     private static boolean matchesSpecialization(Item item, int specialization) {
         String path = Registries.ITEM.getId(item).getPath().toLowerCase(Locale.ROOT);
-        String name = item.getName().getString().toLowerCase(Locale.ROOT);
 
-        // Construction materials are classified first so waxed copper blocks,
-        // concrete and decorative blocks never leak into combat/alchemy stock.
-        boolean building = containsAny(path, "block", "concrete", "terracotta", "brick",
-                "planks", "log", "wood", "stone", "copper", "glass", "wool", "slab",
-                "stairs", "wall", "fence", "door", "trapdoor", "tile", "marble",
-                "limestone", "basalt", "deepslate", "sandstone", "quartz_block",
-                "clay", "scaffolding", "pane", "carpet")
-                || containsAny(name, "concrete", "waxed", "building", "bricks");
+        // Block items belong to the quartermaster, never to alchemists or combat traders.
+        boolean building = item instanceof BlockItem || containsAny(path, "concrete",
+                "terracotta", "planks", "log", "wood", "stone", "copper_block",
+                "glass", "wool", "slab", "stairs", "wall", "fence", "door",
+                "trapdoor", "tile", "marble", "limestone", "basalt", "deepslate",
+                "sandstone", "quartz_block", "clay", "scaffolding", "pane", "carpet");
+
+        // Explicit categories; avoid broad words such as "powder", "dust" or "flower":
+        // they match unrelated items like concrete powder and decorative blocks.
         boolean food = containsAny(path, "bread", "food", "stew", "meat", "fish",
                 "apple", "carrot", "potato", "wheat", "seed", "cookie", "berry",
-                "berries", "melon", "pumpkin", "beetroot", "sugar", "honey");
-        boolean combat = containsAny(path, "sword", "axe", "bow", "crossbow", "shield",
-                "helmet", "chestplate", "leggings", "boots", "armor", "arrow",
-                "weapon", "trident", "mace");
+                "berries", "melon", "pumpkin", "beetroot", "honey_bottle");
+        boolean combat = containsAny(path, "sword", "battle_axe", "war_axe", "bow",
+                "crossbow", "shield", "helmet", "chestplate", "leggings", "boots",
+                "armor", "armour", "trident", "mace");
         boolean mining = containsAny(path, "ore", "ingot", "raw_", "nugget", "gem",
                 "diamond", "emerald", "coal", "iron", "gold", "lapis", "quartz",
-                "amethyst", "copper_ingot", "ancient_debris");
-        boolean alchemy = containsAny(path, "potion", "bottle", "ingredient", "herb",
-                "brew", "wart", "dust", "powder", "flower", "sugar", "fermented",
-                "phantom_membrane", "blaze_rod", "magma_cream", "ghast_tear",
-                "spider_eye", "slime_ball");
+                "amethyst", "ancient_debris");
+        boolean alchemy = containsAny(path, "potion", "splash_potion", "lingering_potion",
+                "glass_bottle", "nether_wart", "blaze_powder", "blaze_rod",
+                "glowstone_dust", "redstone", "fermented_spider_eye", "magma_cream",
+                "ghast_tear", "spider_eye", "slime_ball", "phantom_membrane",
+                "dragon_breath", "rabbit_foot", "turtle_helmet");
         boolean machinery = containsAny(path, "redstone", "piston", "repeater",
                 "comparator", "hopper", "observer", "dispenser", "dropper", "rail",
                 "lever", "button", "pressure_plate", "gear", "machine", "circuit",
                 "copper_bulb", "lightning_rod", "target");
 
+        // Upgrade components and smithing templates are late-game materials,
+        // not ordinary weapons for the early weapon trader.
+        boolean upgradeMaterial = containsAny(path, "upgrade", "smithing_template",
+                "netherite", "weapon_augment", "weapon_upgrade", "reforging",
+                "awakening", "mythic_core", "legendary_core");
+
+        if (specialization != 6 && building) return false;
+        if (upgradeMaterial && specialization != 5) return false;
+
         return switch (specialization) {
             case 0 -> food || containsAny(path, "torch", "lantern", "bed", "bucket", "campfire");
-            case 1 -> combat;
+            case 1 -> combat && !upgradeMaterial;
             case 2 -> mining;
             case 3 -> alchemy;
             case 4 -> machinery;
@@ -178,17 +189,35 @@ public class TradeState extends PersistentState {
      * for arbitrary items supplied by other mods.
      */
     private static int getItemTier(Item item) {
+        String path = Registries.ITEM.getId(item).getPath().toLowerCase(Locale.ROOT);
+        boolean modded = !Registries.ITEM.getId(item).getNamespace().equals("minecraft");
+
+        // Hard gates for end-game progression materials, regardless of rarity or stack size.
+        if (containsAny(path, "netherite", "ancient_debris", "smithing_template",
+                "upgrade", "weapon_augment", "weapon_upgrade", "reforging",
+                "awakening", "mythic", "legendary", "dragonsteel", "chaos",
+                "awakened", "ultimate")) return 5;
+
         int tier = 1;
-        // Do not penalize an item merely because it comes from a mod:
-        // modded items must be able to appear from the first trade stage.
-        if (item.getMaxDamage() > 0) tier++;
-        if (item.getMaxDamage() > 500) tier++;
-        if (item.getMaxCount() <= 16) tier++;
+        if (containsAny(path, "diamond", "obsidian", "reinforced", "steel", "titanium")) tier = 3;
+        if (containsAny(path, "iron", "gold", "copper", "bronze", "silver")) tier = Math.max(tier, 2);
+
+        // Unclassified modded items are held back until the middle stages.
+        // Basic modded materials can still appear early and keep every stage varied.
+        if (modded && tier == 1 && !containsAny(path, "wood", "stone", "cobble",
+                "flint", "copper", "iron", "coal", "leather", "string", "cloth",
+                "fiber", "bread", "food", "herb", "berry", "wheat", "torch")) {
+            tier = 3;
+        }
+
+        if (item.getMaxDamage() > 0) tier = Math.max(tier, 2);
+        if (item.getMaxDamage() > 500) tier = Math.max(tier, 3);
+        if (item.getMaxCount() <= 16) tier = Math.max(tier, 2);
 
         Rarity rarity = item.getDefaultStack().getRarity();
-        if (rarity == Rarity.UNCOMMON) tier++;
-        else if (rarity == Rarity.RARE) tier += 2;
-        else if (rarity == Rarity.EPIC) tier += 3;
+        if (rarity == Rarity.UNCOMMON) tier = Math.max(tier, 2);
+        else if (rarity == Rarity.RARE) tier = Math.max(tier, 3);
+        else if (rarity == Rarity.EPIC) tier = Math.max(tier, 4);
 
         return Math.min(5, tier);
     }
@@ -251,7 +280,7 @@ public class TradeState extends PersistentState {
             tag.putBoolean("orderReady", d.orderReady);
             tag.putBoolean("pendingRequest", d.pendingRequest);
             tag.putLong("requestDeadline", d.requestDeadline);
-            tag.putInt("stockVersion", 2);
+            tag.putInt("stockVersion", 3);
 
             NbtList stockStages = new NbtList();
             for (Map.Entry<Integer, List<String>> stockEntry : d.stockByStage.entrySet()) {
@@ -291,7 +320,7 @@ public class TradeState extends PersistentState {
 
             // Regenerate legacy assortments once so old traders lose unrelated items
             // and receive the new specialization-focused stock.
-            NbtList stockStages = tag.getInt("stockVersion") >= 2
+            NbtList stockStages = tag.getInt("stockVersion") >= 3
                     ? tag.getList("stockByStage", 10) : new NbtList();
             for (int j = 0; j < stockStages.size(); j++) {
                 NbtCompound stageTag = stockStages.getCompound(j);
