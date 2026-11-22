@@ -54,7 +54,8 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         if (player.squaredDistanceTo(pillager) > 256.0 || player.squaredDistanceTo(
                 pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 64.0) return false;
 
-        int cost = TradeState.orderPriceFor(sample.getItem()) * 8;
+        int requestedAmount = Math.min(8, sample.getItem().getMaxCount());
+        int cost = TradeState.orderPriceFor(sample.getItem()) * requestedAmount;
         if (!PillagerTradeMod.removeEmeralds(player, cost)) {
             player.sendMessage(Text.literal("Недостаточно изумрудов. Заказ стоит " + cost + " изумрудов."), true);
             PillagerTradeMod.syncEmeraldBalance(player);
@@ -71,7 +72,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         failed = false;
         inventory.setStack(0, ItemStack.EMPTY);
         markDirty();
-        player.sendMessage(Text.literal("Поборник отправился за 8 предметами. Ожидайте от 5 до 20 игровых дней."), false);
+        player.sendMessage(Text.literal("Поборник отправился за предметами. Количество: " + requestedAmount + ". Ожидайте от 5 до 20 игровых дней."), false);
         PillagerTradeMod.syncEmeraldBalance(player);
         return true;
     }
