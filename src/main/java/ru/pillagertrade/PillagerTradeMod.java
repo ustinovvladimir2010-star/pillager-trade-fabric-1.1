@@ -9,6 +9,13 @@ import net.minecraft.entity.mob.PillagerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.BlockItem;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.screen.ScreenHandlerType;
+import net.fabricmc.fabric.api.screenhandler.v1.ScreenHandlerRegistry;
+import net.minecraft.registry.Registry;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -27,9 +34,44 @@ public class PillagerTradeMod implements ModInitializer {
     public static final Identifier OPEN_SCREEN = new Identifier(MOD_ID, "open_screen");
     public static final Identifier ACTION = new Identifier(MOD_ID, "action");
     public static final Identifier SYNC = new Identifier(MOD_ID, "sync");
+    public static final Identifier ORDER_START = new Identifier(MOD_ID, "order_start");
+    public static final Block ORDER_TABLE = Registry.register(Registries.BLOCK,
+            new Identifier(MOD_ID, "order_table"),
+            new OrderTableBlock(AbstractBlock.Settings.create().strength(2.5f).requiresTool()));
+    public static final net.minecraft.item.Item ORDER_TABLE_ITEM = Registry.register(Registries.ITEM,
+            new Identifier(MOD_ID, "order_table"), new BlockItem(ORDER_TABLE, new net.minecraft.item.Item.Settings()));
+    public static final BlockEntityType<OrderTableBlockEntity> ORDER_TABLE_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE, new Identifier(MOD_ID, "order_table"),
+            BlockEntityType.Builder.create(OrderTableBlockEntity::new, ORDER_TABLE).build(null));
+    public static final ScreenHandlerType<OrderTableScreenHandler> ORDER_TABLE_SCREEN =
+            ScreenHandlerRegistry.registerExtended(new Identifier(MOD_ID, "order_table"),
+                    (syncId, inventory, buf) -> {
+                        net.minecraft.util.math.BlockPos pos = buf.readBlockPos();
+                        int count = buf.readVarInt();
+                        List<OrderTableScreenHandler.TraderOption> options = new java.util.ArrayList<>();
+                        for (int i = 0; i < count; i++) {
+                            options.add(new OrderTableScreenHandler.TraderOption(buf.readUuid(),
+                                    buf.readString(128), buf.readInt(), buf.readInt()));
+                        }
+                        net.minecraft.block.entity.BlockEntity be = inventory.player.getWorld().getBlockEntity(pos);
+                        OrderTableBlockEntity table = be instanceof OrderTableBlockEntity found
+                                ? found : new OrderTableBlockEntity(pos, ORDER_TABLE.getDefaultState());
+                        return new OrderTableScreenHandler(syncId, inventory, table, options);
+                    });
 
     @Override
     public void onInitialize() {
+        ServerPlayNetworking.registerGlobalReceiver(ORDER_START, (server, player, handler, buf, responseSender) -> {
+            net.minecraft.util.math.BlockPos pos = buf.readBlockPos();
+            int index = buf.readVarInt();
+            server.execute(() -> {
+                if (player.currentScreenHandler instanceof OrderTableScreenHandler screen
+                        && screen.getTable().getPos().equals(pos)
+                        && index >= 0 && index < screen.getTraders().size()) {
+                    screen.getTable().startOrder(player, screen.getTraders().get(index).id());
+                }
+            });
+        });
         ServerPlayNetworking.registerGlobalReceiver(ACTION, (server, player, handler, buf, responseSender) -> {
             String action = buf.readString(32);
             UUID traderId = buf.readUuid();
@@ -159,7 +201,7 @@ public class PillagerTradeMod implements ModInitializer {
         }
     }
 
-    private static int countEmeralds(ServerPlayerEntity player) {
+    public static int countEmeralds(ServerPlayerEntity player) {
         int found = 0;
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
@@ -168,13 +210,13 @@ public class PillagerTradeMod implements ModInitializer {
         return found;
     }
 
-    private static void syncEmeraldBalance(ServerPlayerEntity player) {
+    public static void syncEmeraldBalance(ServerPlayerEntity player) {
         PacketByteBuf out = PacketByteBufs.create();
         out.writeInt(countEmeralds(player));
         ServerPlayNetworking.send(player, SYNC, out);
     }
 
-    private static boolean removeEmeralds(ServerPlayerEntity player, int amount) {
+    public static boolean removeEmeralds(ServerPlayerEntity player, int amount) {
         int found = 0;
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
@@ -193,7 +235,7 @@ public class PillagerTradeMod implements ModInitializer {
         return true;
     }
 
-    private static void giveItem(ServerPlayerEntity player, ItemStack stack) {
+    public static void giveItem(ServerPlayerEntity player, ItemStack stack) {
         if (!player.getInventory().insertStack(stack)) player.dropItem(stack, false);
     }
 }
