@@ -1,1 +1,9 @@
-{"parent":"minecraft:block/cube_all","textures":{"all":"minecraft:block/oak_planks"}}
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "top": "pillager_trade:block/order_table_top",
+    "bottom": "pillager_trade:block/order_table_bottom",
+    "side": "pillager_trade:block/order_table_side",
+    "particle": "pillager_trade:block/order_table_side"
+  }
+}
