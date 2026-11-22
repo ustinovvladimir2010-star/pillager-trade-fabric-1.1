@@ -221,15 +221,16 @@ public class PillagerTradeMod implements ModInitializer {
             if (!(world.getEntity(entry.getKey()) instanceof PillagerEntity guard) || !guard.isAlive()) {
                 continue;
             }
-            if (!(world.getPlayerByUuid(data.hireOwner) instanceof ServerPlayerEntity owner)
-                    || !owner.isAlive()) {
+            ServerPlayerEntity owner = world.getServer().getPlayerManager().getPlayer(data.hireOwner);
+            if (owner == null || !owner.isAlive()) {
                 continue;
             }
 
             // Look for hostile mobs threatening the owner or the guard.
             Box searchArea = owner.getBoundingBox().expand(12.0);
             List<HostileEntity> threats = world.getEntitiesByClass(HostileEntity.class, searchArea,
-                    hostile -> hostile.isAlive() && hostile != guard);
+                    hostile -> hostile.isAlive() && hostile != guard
+                            && !(hostile instanceof PillagerEntity));
             HostileEntity nearest = null;
             double nearestDistance = Double.MAX_VALUE;
             for (HostileEntity hostile : threats) {
