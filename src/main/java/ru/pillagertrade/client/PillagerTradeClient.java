@@ -2,8 +2,6 @@ package ru.pillagertrade.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.PacketByteBuf;
 import ru.pillagertrade.PillagerTradeMod;
 
 import java.util.ArrayList;
@@ -20,12 +18,13 @@ public class PillagerTradeClient implements ClientModInitializer {
             int specialization = buf.readInt();
             boolean hired = buf.readBoolean();
             long day = buf.readLong();
+            int stage = buf.readInt();
             int count = buf.readVarInt();
             List<PillagerTradeScreen.StockEntry> stock = new ArrayList<>();
             for (int i = 0; i < count; i++) {
                 stock.add(new PillagerTradeScreen.StockEntry(buf.readString(128), buf.readString(128), buf.readInt()));
             }
-            client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stock)));
+            client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stage, stock)));
         });
     }
 }
