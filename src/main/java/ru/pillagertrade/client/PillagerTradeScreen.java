@@ -7,6 +7,8 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.network.PacketByteBuf;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.text.Text;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import ru.pillagertrade.PillagerTradeMod;
 
 import java.util.List;
@@ -24,10 +26,11 @@ public class PillagerTradeScreen extends Screen {
     private final int nextStageReputation;
     private final List<StockEntry> stock;
     private int selected = 0;
+    private int emeraldBalance;
 
     public PillagerTradeScreen(UUID trader, String name, int reputation, int specialization,
                                boolean hired, long day, int stage, int nextStageDay,
-                               int nextStageReputation, List<StockEntry> stock) {
+                               int nextStageReputation, int emeraldBalance, List<StockEntry> stock) {
         super(Text.translatable("screen.pillager_trade.title"));
         this.trader = trader;
         this.traderName = name;
@@ -39,6 +42,7 @@ public class PillagerTradeScreen extends Screen {
         this.nextStageDay = nextStageDay;
         this.nextStageReputation = nextStageReputation;
         this.stock = stock;
+        this.emeraldBalance = emeraldBalance;
     }
 
     @Override
@@ -49,9 +53,9 @@ public class PillagerTradeScreen extends Screen {
         for (int i = 0; i < Math.min(8, stock.size()); i++) {
             final int index = i;
             addDrawableChild(ButtonWidget.builder(
-                    Text.literal(stock.get(i).name + " — " + stock.get(i).price + " э"),
+                    Text.literal(stock.get(i).name),
                     b -> selected = index)
-                    .dimensions(left + 12, top + 74 + i * 19, 336, 18).build());
+                    .dimensions(left + 12, top + 74 + i * 19, 280, 18).build());
         }
 
         addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.buy"), b -> buySelected())
@@ -101,6 +105,17 @@ public class PillagerTradeScreen extends Screen {
                     left + 12, top + 251, 0x55FF55, false);
         }
         super.render(context, mouseX, mouseY, delta);
+        context.drawItem(new ItemStack(Items.EMERALD), left + 268, top + 8);
+        context.drawText(textRenderer, String.valueOf(emeraldBalance), left + 288, top + 13, 0x55FF55, false);
+        for (int i = 0; i < Math.min(8, stock.size()); i++) {
+            int rowY = top + 74 + i * 19;
+            context.drawItem(new ItemStack(Items.EMERALD), left + 300, rowY + 1);
+            context.drawText(textRenderer, String.valueOf(stock.get(i).price), left + 320, rowY + 5, 0x55FF55, false);
+        }
+    }
+
+    public void setEmeraldBalance(int emeraldBalance) {
+        this.emeraldBalance = emeraldBalance;
     }
 
     private String specializationName(int id) {
