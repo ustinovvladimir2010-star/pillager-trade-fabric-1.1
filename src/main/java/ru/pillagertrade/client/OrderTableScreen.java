@@ -14,7 +14,7 @@ import ru.pillagertrade.PillagerTradeMod;
 public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
     public OrderTableScreen(OrderTableScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        this.backgroundWidth = 230;
+        this.backgroundWidth = 330;
         this.backgroundHeight = 210;
         this.playerInventoryTitleY = 116;
         this.titleY = 6;
@@ -36,7 +36,7 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
                         buf.writeBlockPos(handler.getTable().getPos());
                         buf.writeVarInt(index);
                         ClientPlayNetworking.send(PillagerTradeMod.ORDER_START, buf);
-                    }).dimensions(x + 8, y + 72 + i * 20, 112, 18).build());
+                    }).dimensions(x + 174, y + 34 + i * 22, 148, 20).build());
         }
     }
 
@@ -52,20 +52,20 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
         context.drawBorder(x + 39, y + 30, 28, 28, 0xFF777777);
         context.fill(x + 111, y + 12, x + 169, y + 70, 0xFFE2E2E2);
         context.drawBorder(x + 111, y + 12, 58, 58, 0xFF777777);
-        context.drawText(textRenderer, "Образец", x + 24, y + 20, 0xFFFFFF, false);
-        context.drawText(textRenderer, "Добыча", x + 142, y + 5, 0xFFFFFF, false);
-        context.drawText(textRenderer, "Поборники поблизости:", x + 8, y + 60, 0xE4C98A, false);
+        context.drawText(textRenderer, "Образец", x + 24, y + 20, 0xFF404040, false);
+        context.drawText(textRenderer, "Добыча", x + 142, y + 5, 0xFF404040, false);
+        context.drawText(textRenderer, "Поборники поблизости:", x + 174, y + 18, 0xFF404040, false);
         if (handler.getTraders().isEmpty()) {
-            context.drawText(textRenderer, "Нет поборников в радиусе 16 блоков", x + 8, y + 76, 0xFF7777, false);
+            context.drawText(textRenderer, "Нет поборников в радиусе 16 блоков", x + 174, y + 38, 0xFFAA3333, false);
         }
         if (handler.getTable().hasActiveOrder()) {
-            context.drawText(textRenderer, "Заказ выполняется", x + 8, y + 177, 0xFFCC55, false);
+            context.drawText(textRenderer, "Заказ выполняется", x + 174, y + 164, 0xFF8A6500, false);
         } else if (handler.getTable().isReady()) {
-            context.drawText(textRenderer, "Заказ доставлен!", x + 8, y + 177, 0x55FF55, false);
+            context.drawText(textRenderer, "Заказ доставлен!", x + 174, y + 164, 0xFF267A26, false);
         } else if (handler.getTable().isFailed()) {
-            context.drawText(textRenderer, "Заказ не выполнен", x + 8, y + 177, 0xFF7777, false);
+            context.drawText(textRenderer, "Заказ не выполнен", x + 174, y + 164, 0xFFAA3333, false);
         } else {
-            context.drawText(textRenderer, "Плата: цена предмета x 8", x + 8, y + 177, 0xBBBBBB, false);
+            context.drawText(textRenderer, "Плата: цена предмета x 8", x + 174, y + 164, 0xFF555555, false);
         }
     }
 
