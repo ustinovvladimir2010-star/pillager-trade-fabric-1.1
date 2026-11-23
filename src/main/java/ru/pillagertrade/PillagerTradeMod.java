@@ -18,6 +18,9 @@ import net.minecraft.util.math.Box;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.ToolMaterials;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
@@ -40,6 +43,9 @@ import java.util.UUID;
 
 public class PillagerTradeMod implements ModInitializer {
     public static final String MOD_ID = "pillager_trade";
+    public static final Item BARON_CANE = Registry.register(Registries.ITEM,
+            new Identifier(MOD_ID, "baron_cane"),
+            new BaronCaneItem(ToolMaterials.NETHERITE, 11, -3.1F, new Item.Settings().maxCount(1)));
     public static final Identifier OPEN_SCREEN = new Identifier(MOD_ID, "open_screen");
     public static final Identifier ACTION = new Identifier(MOD_ID, "action");
     public static final Identifier SYNC = new Identifier(MOD_ID, "sync");
@@ -118,6 +124,7 @@ public class PillagerTradeMod implements ModInitializer {
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (!(entity.getWorld() instanceof ServerWorld world) || !entity.getCommandTags().contains(BARON_TAG)) return;
+            world.spawnEntity(new ItemEntity(world, entity.getX(), entity.getY(), entity.getZ(), new ItemStack(BARON_CANE)));
             TradeState state = TradeState.get(world);
             state.setBaronDefeated(true);
             state.setBaronEntityId(null);
@@ -172,11 +179,20 @@ public class PillagerTradeMod implements ModInitializer {
                     if (boss.getAttributeInstance(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE) != null)
                         boss.getAttributeInstance(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(0.75);
                     boss.setHealth(220.0F);
-                    boss.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_AXE));
-                    boss.equipStack(net.minecraft.entity.EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
-                    boss.equipStack(net.minecraft.entity.EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
-                    boss.equipStack(net.minecraft.entity.EquipmentSlot.LEGS, new ItemStack(Items.IRON_LEGGINGS));
-                    boss.equipStack(net.minecraft.entity.EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
+                    boss.equipStack(EquipmentSlot.MAINHAND, new ItemStack(BARON_CANE));
+                    ItemStack crown = new ItemStack(Items.GOLDEN_HELMET);
+                    crown.setCustomName(Text.literal("§6Корона криминального барона"));
+                    boss.equipStack(EquipmentSlot.HEAD, crown);
+                    ItemStack jacket = new ItemStack(Items.LEATHER_CHESTPLATE);
+                    jacket.getOrCreateSubNbt("display").putInt("color", 0x171717);
+                    jacket.setCustomName(Text.literal("§8Пиджак барона"));
+                    boss.equipStack(EquipmentSlot.CHEST, jacket);
+                    ItemStack trousers = new ItemStack(Items.LEATHER_LEGGINGS);
+                    trousers.getOrCreateSubNbt("display").putInt("color", 0x171717);
+                    boss.equipStack(EquipmentSlot.LEGS, trousers);
+                    ItemStack shoes = new ItemStack(Items.LEATHER_BOOTS);
+                    shoes.getOrCreateSubNbt("display").putInt("color", 0x171717);
+                    boss.equipStack(EquipmentSlot.FEET, shoes);
                     serverWorld.spawnEntity(boss);
                     state.setBaronEntityId(boss.getUuid());
                     serverWorld.getPlayers().forEach(player -> player.sendMessage(
