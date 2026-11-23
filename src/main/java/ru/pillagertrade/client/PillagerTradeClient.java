@@ -2,7 +2,8 @@ package ru.pillagertrade.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import ru.pillagertrade.PillagerTradeMod;\nimport net.minecraft.text.Text;
+import ru.pillagertrade.PillagerTradeMod;
+import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -87,7 +88,8 @@ public class PillagerTradeClient implements ClientModInitializer {
             }
             boolean activeQuest = buf.readBoolean();
             String questItemId = buf.readString(128);
-            String questTranslationKey = buf.readString(256);\n            String questItemName = localizeItem(questTranslationKey);
+            String questTranslationKey = buf.readString(256);
+            String questItemName = localizeItem(questTranslationKey);
             int questAmount = buf.readInt();
             int questReward = buf.readInt();
             int questProgress = buf.readInt();
