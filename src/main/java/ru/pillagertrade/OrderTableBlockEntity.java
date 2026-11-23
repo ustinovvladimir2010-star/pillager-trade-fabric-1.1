@@ -89,14 +89,18 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         deliveryChancePercent = (int) Math.round(deliveryChance(sample.getItem(), traderData == null ? 0 : traderData.reputation) * 100.0);
         emeraldCost = cost;
         startTime = serverWorld.getTime();
-        dueTime = startTime + (5 + serverWorld.getRandom().nextInt(16)) * 24000L;
+        int itemValue = TradeState.orderPriceFor(sample.getItem());
+        int minDays = itemValue <= 2 ? 1 : itemValue <= 5 ? 2 : itemValue <= 12 ? 4 : 7;
+        int maxDays = itemValue <= 2 ? 2 : itemValue <= 5 ? 4 : itemValue <= 12 ? 7 : 10;
+        int deliveryDays = minDays + serverWorld.getRandom().nextInt(maxDays - minDays + 1);
+        dueTime = startTime + deliveryDays * 24000L;
         summonOrder = false;
         active = true;
         ready = false;
         failed = false;
         inventory.setStack(0, ItemStack.EMPTY);
         markDirty();
-        player.sendMessage(Text.literal("Поборник отправился за предметами. Количество: " + requestedAmount + ". Ожидайте от 5 до 20 игровых дней."), false);
+        player.sendMessage(Text.literal("Поборник отправился за предметами. Количество: " + requestedAmount + ". Доставка займёт примерно " + deliveryDays + " игровых дн."), false);
         PillagerTradeMod.syncEmeraldBalance(player);
         return true;
     }
