@@ -36,6 +36,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
     private long startTime;
     private boolean summonOrder;
     private int summonedCount;
+    private int deliveryChancePercent;
     private int emeraldCost;
     private boolean active;
     private boolean ready;
@@ -52,6 +53,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
     public boolean isFailed() { return failed; }
     public String getOrderItemId() { return itemId; }
     public int getEmeraldCost() { return emeraldCost; }
+    public int getDeliveryChancePercent() { return deliveryChancePercent; }
     public long getStartTime() { return startTime; }
     public long getDueTime() { return dueTime; }
     public boolean isSummonOrder() { return summonOrder; }
@@ -80,6 +82,8 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         owner = player.getUuid();
         trader = traderId;
         itemId = Registries.ITEM.getId(sample.getItem()).toString();
+        TradeState.TraderData traderData = TradeState.get(serverWorld).get(traderId);
+        deliveryChancePercent = (int) Math.round(deliveryChance(sample.getItem(), traderData == null ? 0 : traderData.reputation) * 100.0);
         emeraldCost = cost;
         startTime = serverWorld.getTime();
         dueTime = startTime + (5 + serverWorld.getRandom().nextInt(16)) * 24000L;
@@ -125,6 +129,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         ready = false;
         failed = false;
         summonOrder = true;
+        deliveryChancePercent = 0;
         summonedCount = 1 + serverWorld.getRandom().nextInt(3);
         player.sendMessage(Text.literal("Подкрепление в пути: " + summonedCount + " разбойник(а). Прибытие через 2–3 игровых дня."), false);
         PillagerTradeMod.syncEmeraldBalance(player);
@@ -178,7 +183,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         active = false;
         TradeState state = TradeState.get(serverWorld);
         TradeState.TraderData data = state.get(trader);
-        double chance = data == null ? 0.60 : deliveryChance(Registries.ITEM.getOrEmpty(new net.minecraft.util.Identifier(itemId)).orElse(Items.AIR), data.reputation);
+        double chance = deliveryChancePercent / 100.0;
         if (summonOrder) {
             completeSummonOrder(serverWorld);
             markDirty();
@@ -267,6 +272,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         startTime = nbt.getLong("startTime");
         summonOrder = nbt.getBoolean("summonOrder");
         summonedCount = nbt.getInt("summonedCount");
+        deliveryChancePercent = nbt.getInt("deliveryChancePercent");
         emeraldCost = nbt.getInt("emeraldCost");
         if (nbt.containsUuid("owner")) owner = nbt.getUuid("owner");
         if (nbt.containsUuid("trader")) trader = nbt.getUuid("trader");
@@ -294,6 +300,7 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         nbt.putLong("startTime", startTime);
         nbt.putBoolean("summonOrder", summonOrder);
         nbt.putInt("summonedCount", summonedCount);
+        nbt.putInt("deliveryChancePercent", deliveryChancePercent);
         nbt.putInt("emeraldCost", emeraldCost);
         if (owner != null) nbt.putUuid("owner", owner);
         if (trader != null) nbt.putUuid("trader", trader);
