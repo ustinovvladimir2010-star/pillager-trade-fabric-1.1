@@ -19,7 +19,7 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
         super(handler, inventory, title);
         this.backgroundWidth = 330;
         this.backgroundHeight = 210;
-        this.playerInventoryTitleY = 116;
+        this.playerInventoryTitleY = 92;
         this.titleY = 6;
     }
 
@@ -65,32 +65,39 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
-        context.fill(x, y, x + backgroundWidth, y + backgroundHeight, 0xFFC6C6C6);
-        context.drawBorder(x, y, backgroundWidth, backgroundHeight, 0xFF555555);
+        context.fill(x, y, x + backgroundWidth, y + backgroundHeight, 0xFF242424);
+        context.drawBorder(x, y, backgroundWidth, backgroundHeight, 0xFF111111);
 
         // Light vanilla-style work areas behind the sample and delivery slots.
-        context.fill(x + 39, y + 30, x + 67, y + 58, 0xFFE2E2E2);
-        context.drawBorder(x + 39, y + 30, 28, 28, 0xFF777777);
-        context.fill(x + 111, y + 12, x + 169, y + 70, 0xFFE2E2E2);
-        context.drawBorder(x + 111, y + 12, 58, 58, 0xFF777777);
-        context.drawText(textRenderer, "Образец", x + 24, y + 20, 0xFF404040, false);
-        context.drawText(textRenderer, "Добыча", x + 142, y + 5, 0xFF404040, false);
-        if (!summonTab) context.drawText(textRenderer, "Выберите торговца для доставки:", x + 174, y + 18, 0xFF404040, false);
-        if (!summonTab && handler.getTable().hasActiveOrder() && !handler.getTable().isSummonOrder()) {
-            context.drawText(textRenderer, "Шанс доставки: " + handler.getTable().getDeliveryChancePercent() + "%", x + 174, y + 132, 0xFF267A26, false);
+        context.fill(x + 39, y + 30, x + 67, y + 58, 0xFF383838);
+        context.drawBorder(x + 39, y + 30, 28, 28, 0xFF666666);
+        context.fill(x + 111, y + 12, x + 169, y + 70, 0xFF383838);
+        context.drawBorder(x + 111, y + 12, 58, 58, 0xFF666666);
+        context.drawText(textRenderer, "Образец", x + 24, y + 20, 0xFFE0E0E0, false);
+        context.drawText(textRenderer, "Добыча", x + 142, y + 5, 0xFFE0E0E0, false);
+        if (!summonTab) context.drawText(textRenderer, "Выберите торговца для доставки:", x + 174, y + 18, 0xFFE0E0E0, false);
+        if (summonTab) {
+            context.drawText(textRenderer, "Подкрепление из 1–3 разбойников:", x + 174, y + 34, 0xFFE0E0E0, false);
+        } else if (handler.getTable().hasActiveOrder() && !handler.getTable().isSummonOrder()) {
+            context.drawText(textRenderer, "Шанс доставки: " + handler.getTable().getDeliveryChancePercent() + "%", x + 174, y + 132, 0xFF70D080, false);
         }
-        else context.drawText(textRenderer, "Подкрепление из 1–3 разбойников:", x + 174, y + 34, 0xFF404040, false);
         if (!summonTab && handler.getTraders().isEmpty()) {
-            context.drawText(textRenderer, "Нет поборников в радиусе 16 блоков", x + 174, y + 38, 0xFFAA3333, false);
+            context.drawText(textRenderer, "Нет поборников в радиусе 16 блоков", x + 174, y + 38, 0xFFFF7777, false);
         }
         if (handler.getTable().hasActiveOrder()) {
-            context.drawText(textRenderer, "Заказ выполняется", x + 174, y + 164, 0xFF8A6500, false);
+            int progress = handler.getTable().getProgress(client.world == null ? 0L : client.world.getTime());
+            int barX = x + 174, barY = y + 148, barW = 148, barH = 9;
+            context.fill(barX, barY, barX + barW, barY + barH, 0xFF111111);
+            context.fill(barX + 1, barY + 1, barX + 1 + (barW - 2) * progress / 100, barY + barH - 1, 0xFF35B85A);
+            context.drawBorder(barX, barY, barW, barH, 0xFF666666);
+            context.drawText(textRenderer, "Доставка: " + progress + "%", barX, barY - 12, 0xFFE0E0E0, false);
+            context.drawText(textRenderer, "Заказ выполняется", x + 174, y + 164, 0xFFE0E0E0, false);
         } else if (handler.getTable().isReady()) {
-            context.drawText(textRenderer, "Заказ доставлен!", x + 174, y + 164, 0xFF267A26, false);
+            context.drawText(textRenderer, "Заказ доставлен!", x + 174, y + 164, 0xFF70D080, false);
         } else if (handler.getTable().isFailed()) {
-            context.drawText(textRenderer, "Заказ не выполнен", x + 174, y + 164, 0xFFAA3333, false);
+            context.drawText(textRenderer, "Заказ не выполнен", x + 174, y + 164, 0xFFFF7777, false);
         } else {
-            context.drawText(textRenderer, "Плата: цена предмета x 8", x + 174, y + 164, 0xFF555555, false);
+            context.drawText(textRenderer, "Плата: цена предмета x 8", x + 174, y + 164, 0xFF111111, false);
         }
     }
 
