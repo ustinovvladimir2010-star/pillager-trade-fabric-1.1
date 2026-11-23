@@ -76,6 +76,9 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
         context.drawText(textRenderer, "Образец", x + 24, y + 20, 0xFF404040, false);
         context.drawText(textRenderer, "Добыча", x + 142, y + 5, 0xFF404040, false);
         if (!summonTab) context.drawText(textRenderer, "Выберите торговца для доставки:", x + 174, y + 18, 0xFF404040, false);
+        if (!summonTab && handler.getTable().hasActiveOrder() && !handler.getTable().isSummonOrder()) {
+            context.drawText(textRenderer, "Шанс доставки: " + handler.getTable().getDeliveryChancePercent() + "%", x + 174, y + 132, 0xFF267A26, false);
+        }
         else context.drawText(textRenderer, "Подкрепление из 1–3 разбойников:", x + 174, y + 34, 0xFF404040, false);
         if (!summonTab && handler.getTraders().isEmpty()) {
             context.drawText(textRenderer, "Нет поборников в радиусе 16 блоков", x + 174, y + 38, 0xFFAA3333, false);
