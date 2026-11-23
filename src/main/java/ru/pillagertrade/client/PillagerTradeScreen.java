@@ -33,13 +33,14 @@ public class PillagerTradeScreen extends Screen {
     private final String questItemName;
     private final int questAmount;
     private final int questReward;
+    private final int questProgress;
     private final List<ButtonWidget> tradeButtons = new java.util.ArrayList<>();
     private ButtonWidget questActionButton;
 
     public PillagerTradeScreen(UUID trader, String name, int reputation, int specialization,
                                boolean hired, long day, int stage, int nextStageDay,
                                int nextStageReputation, int emeraldBalance, List<StockEntry> stock,
-                               boolean activeQuest, String questItemId, String questItemName, int questAmount, int questReward) {
+                               boolean activeQuest, String questItemId, String questItemName, int questAmount, int questReward, int questProgress) {
         super(Text.translatable("screen.pillager_trade.title"));
         this.trader = trader;
         this.traderName = name;
@@ -57,6 +58,7 @@ public class PillagerTradeScreen extends Screen {
         this.questItemName = questItemName;
         this.questAmount = questAmount;
         this.questReward = questReward;
+        this.questProgress = questProgress;
     }
 
     @Override
@@ -81,7 +83,7 @@ public class PillagerTradeScreen extends Screen {
                 .dimensions(left + 12, top + 250, 120, 20).build()));
         addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.close"), b -> close())
                 .dimensions(left + 240, top + 272, 108, 20).build());
-        questActionButton = addDrawableChild(ButtonWidget.builder(Text.literal(activeQuest ? "Сдать предметы" : "Принять задание"),
+        questActionButton = addDrawableChild(ButtonWidget.builder(Text.literal(activeQuest ? (questItemId.startsWith("kill:") ? "Проверить задание" : "Сдать предметы") : "Принять задание"),
                 b -> {
                     send(activeQuest ? "quest_complete" : "quest_accept", questItemId, questAmount, questReward);
                     close();
@@ -125,8 +127,9 @@ public class PillagerTradeScreen extends Screen {
             if (activeQuest) {
                 context.drawText(textRenderer, "Активное задание: найдите предметы", left + 12, top + 80, 0xFFE0E0E0, false);
                 context.drawText(textRenderer, questAmount + " x " + questItemName, left + 12, top + 104, 0xFFFFFFFF, false);
-                context.drawText(textRenderer, "Награда: " + questReward + " изумрудов", left + 12, top + 128, 0xFF70D080, false);
-                context.drawText(textRenderer, "Другие задания откроются после сдачи.", left + 12, top + 158, 0xFFB0B0B0, false);
+                context.drawText(textRenderer, "Прогресс: " + questProgress + " / " + questAmount, left + 12, top + 128, 0xFFFFD080, false);
+                context.drawText(textRenderer, "Награда: " + questReward + " изумрудов", left + 12, top + 148, 0xFF70D080, false);
+                context.drawText(textRenderer, "Другие задания откроются после выполнения.", left + 12, top + 178, 0xFFB0B0B0, false);
             } else {
                 context.drawText(textRenderer, "Поиск предметов:", left + 12, top + 80, 0xFFE0E0E0, false);
                 context.drawText(textRenderer, questAmount + " x " + questItemName, left + 12, top + 104, 0xFFFFFFFF, false);
@@ -153,7 +156,7 @@ public class PillagerTradeScreen extends Screen {
         drawDarkButton(context, left + 240, top + 272, 108, 20, "Закрыть", mouseX, mouseY);
         if (questsTab) {
             drawDarkButton(context, left + 12, top + 220, 150, 22,
-                    activeQuest ? "Сдать предметы" : "Принять задание", mouseX, mouseY);
+                    activeQuest ? (questItemId.startsWith("kill:") ? "Проверить задание" : "Сдать предметы") : "Принять задание", mouseX, mouseY);
         } else {
             for (int i = 0; i < Math.min(8, stock.size()); i++)
                 drawDarkButton(context, left + 12, top + 74 + i * 19, 280, 18, stock.get(i).name, mouseX, mouseY);
