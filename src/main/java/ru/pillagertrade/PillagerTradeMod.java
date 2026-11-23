@@ -207,10 +207,61 @@ public class PillagerTradeMod implements ModInitializer {
         for (Item item : stock) {
             Identifier id = Registries.ITEM.getId(item);
             out.writeString(id.toString());
-            out.writeString(item.getName().getString());
+            out.writeString(displayItemName(item));
             out.writeInt(TradeState.priceFor(item, data, state.hasMarketInfluence(player.getUuid())));
         }
+        TradeState.QuestData activeQuest = state.getQuest(player.getUuid());
+        out.writeBoolean(activeQuest != null);
+        if (activeQuest != null) {
+            Item questItem = Registries.ITEM.getOrEmpty(new Identifier(activeQuest.itemId)).orElse(Items.AIR);
+            out.writeString(activeQuest.itemId);
+            out.writeString(displayItemName(questItem));
+            out.writeInt(activeQuest.amount);
+            out.writeInt(activeQuest.reward);
+        } else if (!stock.isEmpty()) {
+            Item questItem = stock.get(player.getRandom().nextInt(stock.size()));
+            int amount = Math.min(4, questItem.getMaxCount());
+            out.writeString(Registries.ITEM.getId(questItem).toString());
+            out.writeString(displayItemName(questItem));
+            out.writeInt(amount);
+            out.writeInt(Math.max(4, TradeState.orderPriceFor(questItem) * amount * 2));
+        } else {
+            out.writeString("");
+            out.writeString("Нет доступных заданий");
+            out.writeInt(0);
+            out.writeInt(0);
+        }
         ServerPlayNetworking.send(player, OPEN_SCREEN, out);
+    }
+
+    private static String displayItemName(Item item) {
+        String english = item.getName().getString();
+        if (english == null || english.isBlank()) return Registries.ITEM.getId(item).getPath();
+        String lower = english.toLowerCase(java.util.Locale.ROOT);
+        java.util.Map<String, String> dictionary = java.util.Map.ofEntries(
+                java.util.Map.entry("iron ingot", "железный слиток"),
+                java.util.Map.entry("gold ingot", "золотой слиток"),
+                java.util.Map.entry("diamond", "алмаз"),
+                java.util.Map.entry("emerald", "изумруд"),
+                java.util.Map.entry("coal", "уголь"),
+                java.util.Map.entry("copper ingot", "медный слиток"),
+                java.util.Map.entry("bread", "хлеб"),
+                java.util.Map.entry("torch", "факел"),
+                java.util.Map.entry("arrow", "стрела"),
+                java.util.Map.entry("crossbow", "арбалет"),
+                java.util.Map.entry("iron sword", "железный меч"),
+                java.util.Map.entry("diamond sword", "алмазный меч"),
+                java.util.Map.entry("oak planks", "дубовые доски"),
+                java.util.Map.entry("cobblestone", "булыжник"),
+                java.util.Map.entry("leather", "кожа"),
+                java.util.Map.entry("string", "нить"),
+                java.util.Map.entry("ender pearl", "жемчуг эндера"),
+                java.util.Map.entry("amethyst shard", "осколок аметиста")
+        );
+        String known = dictionary.get(lower);
+        if (known != null) return known;
+        String path = Registries.ITEM.getId(item).getPath().replace('_', ' ');
+        return path;
     }
 
     private static void handleAction(ServerPlayerEntity player, String action, UUID traderId, String itemId, int amount, int offer) {
@@ -221,7 +272,51 @@ public class PillagerTradeMod implements ModInitializer {
         if (!(world.getEntity(traderId) instanceof IllagerEntity pillager) || !pillager.isAlive()
                 || player.squaredDistanceTo(pillager) > 64.0) return;
 
-        if ("buy".equals(action)) {
+        if ("quest_accept".equals(action)) {
+            Item questItem;
+            try { questItem = Registries.ITEM.getOrEmpty(new Identifier(itemId)).orElse(Items.AIR); }
+            catch (IllegalArgumentException exception) { return; }
+            if (questItem == Items.AIR || !state.acceptQuest(player.getUuid(), itemId, amount, offer)) {
+                player.sendMessage(Text.literal("У вас уже есть активное задание или предмет недоступен."), true);
+            } else {
+                player.sendMessage(Text.literal("Задание принято: найдите " + amount + " × " + displayItemName(questItem)
+                        + ". Награда: " + offer + " изумрудов."), false);
+            }
+            return;
+        } else if ("quest_complete".equals(action)) {
+            TradeState.QuestData quest = state.getQuest(player.getUuid());
+            if (quest == null) {
+                player.sendMessage(Text.literal("У вас нет активного задания."), true);
+                return;
+            }
+            Item questItem;
+            try { questItem = Registries.ITEM.getOrEmpty(new Identifier(quest.itemId)).orElse(Items.AIR); }
+            catch (IllegalArgumentException exception) { return; }
+            int found = 0;
+            for (int i = 0; i < player.getInventory().size(); i++) {
+                ItemStack stack = player.getInventory().getStack(i);
+                if (stack.isOf(questItem)) found += stack.getCount();
+            }
+            if (questItem == Items.AIR || found < quest.amount) {
+                player.sendMessage(Text.literal("Пока недостаточно предметов для выполнения задания."), true);
+                return;
+            }
+            int remaining = quest.amount;
+            for (int i = 0; i < player.getInventory().size() && remaining > 0; i++) {
+                ItemStack stack = player.getInventory().getStack(i);
+                if (stack.isOf(questItem)) {
+                    int take = Math.min(remaining, stack.getCount());
+                    stack.decrement(take);
+                    remaining -= take;
+                }
+            }
+            int reward = quest.reward;
+            state.finishQuest(player.getUuid());
+            giveItem(player, new ItemStack(Items.EMERALD, reward));
+            player.sendMessage(Text.literal("Задание выполнено! Получено " + reward + " изумрудов."), false);
+            syncEmeraldBalance(player);
+            return;
+        } else if ("buy".equals(action)) {
             Identifier identifier;
             try {
                 identifier = new Identifier(itemId);
