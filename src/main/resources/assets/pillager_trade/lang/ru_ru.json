@@ -5,5 +5,6 @@
   "screen.pillager_trade.refresh": "Обновить",
   "message.pillager_trade.not_enough": "Недостаточно изумрудов.",
   "message.pillager_trade.bought": "Покупка совершена.",
-  "block.pillager_trade.order_table": "Стол заказов"
+  "block.pillager_trade.order_table": "Стол заказов",
+  "item.pillager_trade.baron_cane": "Трость барона"
 }
