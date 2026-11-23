@@ -3,6 +3,7 @@ package ru.pillagertrade;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.entity.mob.PillagerEntity;
@@ -41,6 +42,7 @@ public class PillagerTradeMod implements ModInitializer {
     public static final Identifier ACTION = new Identifier(MOD_ID, "action");
     public static final Identifier SYNC = new Identifier(MOD_ID, "sync");
     public static final Identifier ORDER_START = new Identifier(MOD_ID, "order_start");
+    private static final String BARON_TAG = "pillager_trade_crime_baron";
     public static final Block ORDER_TABLE = Registry.register(Registries.BLOCK,
             new Identifier(MOD_ID, "order_table"),
             new OrderTableBlock(AbstractBlock.Settings.create().strength(2.5f).requiresTool()));
@@ -112,11 +114,72 @@ public class PillagerTradeMod implements ModInitializer {
             return ActionResult.SUCCESS;
         });
 
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
+            if (!(entity.getWorld() instanceof ServerWorld world) || !entity.getCommandTags().contains(BARON_TAG)) return;
+            TradeState state = TradeState.get(world);
+            state.setBaronDefeated(true);
+            state.setBaronEntityId(null);
+            LivingEntity attacker = entity.getAttacker();
+            if (attacker instanceof ServerPlayerEntity player) {
+                state.grantMarketInfluence(player.getUuid());
+                int reward = 16 + world.getRandom().nextInt(17);
+                ItemStack emeralds = new ItemStack(Items.EMERALD, reward);
+                if (!player.getInventory().insertStack(emeralds)) player.dropItem(emeralds, false);
+                player.sendMessage(Text.literal("Криминальный барон повержен! Вы получили " + reward
+                        + " изумрудов и постоянный эффект «Рыночное влияние»: скидка 10% на заказы."), false);
+            } else {
+                world.getPlayers().forEach(player -> player.sendMessage(
+                        Text.literal("Криминальный барон повержен, но награду не получил игрок."), false));
+            }
+        });
+
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             ServerWorld serverWorld = (ServerWorld) world;
             tickHiredGuards(serverWorld);
-            if (world.getTime() % 24000L == 0L) {
-                TradeState.get(serverWorld).onNewDay(serverWorld);
+            TradeState state = TradeState.get(serverWorld);
+            long day = world.getTime() / 24000L;
+            if (world.getTime() % 24000L == 0L) state.onNewDay(serverWorld);
+
+            if (!state.isBaronDefeated() && state.getBaronArrivalTime() == 0L
+                    && state.countMaximumRankTraders(day) >= 5) {
+                state.setBaronArrivalTime(world.getTime() + 24000L);
+                serverWorld.getPlayers().forEach(player -> player.sendMessage(
+                        Text.literal("§4[Угроза] §cКриминальный барон заметил рост вашей торговой сети. "
+                                + "Он прибудет через 1 игровой день!"), false));
+            }
+
+            if (!state.isBaronDefeated() && state.getBaronArrivalTime() > 0L
+                    && world.getTime() >= state.getBaronArrivalTime()
+                    && state.getBaronEntityId() == null && !serverWorld.getPlayers().isEmpty()) {
+                ServerPlayerEntity target = serverWorld.getPlayers().get(serverWorld.getRandom().nextInt(serverWorld.getPlayers().size()));
+                VindicatorEntity boss = EntityType.VINDICATOR.create(serverWorld);
+                if (boss != null) {
+                    boss.refreshPositionAndAngles(target.getX() + 4.0, target.getY(), target.getZ() + 4.0,
+                            serverWorld.getRandom().nextFloat() * 360.0F, 0.0F);
+                    boss.addCommandTag(BARON_TAG);
+                    boss.setCustomName(Text.literal("§4Криминальный барон"));
+                    boss.setCustomNameVisible(true);
+                    if (boss.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH) != null)
+                        boss.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(220.0);
+                    if (boss.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE) != null)
+                        boss.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(18.0);
+                    if (boss.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED) != null)
+                        boss.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.34);
+                    if (boss.getAttributeInstance(EntityAttributes.GENERIC_ARMOR) != null)
+                        boss.getAttributeInstance(EntityAttributes.GENERIC_ARMOR).setBaseValue(12.0);
+                    if (boss.getAttributeInstance(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE) != null)
+                        boss.getAttributeInstance(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(0.75);
+                    boss.setHealth(220.0F);
+                    boss.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_AXE));
+                    boss.equipStack(net.minecraft.entity.EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
+                    boss.equipStack(net.minecraft.entity.EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+                    boss.equipStack(net.minecraft.entity.EquipmentSlot.LEGS, new ItemStack(Items.IRON_LEGGINGS));
+                    boss.equipStack(net.minecraft.entity.EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
+                    serverWorld.spawnEntity(boss);
+                    state.setBaronEntityId(boss.getUuid());
+                    serverWorld.getPlayers().forEach(player -> player.sendMessage(
+                            Text.literal("§4КРИМИНАЛЬНЫЙ БАРОН ПРИБЫЛ! §cОн намерен остановить вашу торговую сеть."), false));
+                }
             }
         });
     }
