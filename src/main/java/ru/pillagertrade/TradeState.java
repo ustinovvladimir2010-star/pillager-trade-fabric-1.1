@@ -11,6 +11,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.PersistentState;
 import net.minecraft.registry.Registries;
 
@@ -285,15 +286,23 @@ public class TradeState extends PersistentState {
     }
 
     public static int orderPriceFor(Item item) {
-        int base = 3;
-        if (item.getMaxDamage() > 0) base += 5;
-        if (item.getMaxDamage() > 500) base += 5;
-        if (item.getMaxCount() <= 16) base += 3;
+        String path = Registries.ITEM.getId(item).getPath().toLowerCase(Locale.ROOT);
+        int value;
+        if (containsAny(path, "netherite", "dragonsteel", "mythic", "legendary", "chaos", "ultimate")) value = 48;
+        else if (containsAny(path, "diamond", "emerald", "nether_star", "elytra", "totem")) value = 24;
+        else if (containsAny(path, "ancient_debris", "beacon", "shulker", "trident", "mace")) value = 20;
+        else if (containsAny(path, "gold", "iron", "amethyst", "blaze_rod", "ender_pearl", "obsidian")) value = 6;
+        else if (containsAny(path, "copper", "coal", "lapis", "redstone", "quartz", "leather", "string")) value = 3;
+        else if (containsAny(path, "bread", "torch", "planks", "cobblestone", "dirt", "sand", "gravel", "stick", "wheat", "seeds")) value = 1;
+        else value = 2;
+
         Rarity rarity = item.getDefaultStack().getRarity();
-        if (rarity == Rarity.UNCOMMON) base += 3;
-        else if (rarity == Rarity.RARE) base += 7;
-        else if (rarity == Rarity.EPIC) base += 12;
-        return Math.max(2, base);
+        if (rarity == Rarity.UNCOMMON) value = Math.max(value, 5);
+        else if (rarity == Rarity.RARE) value = Math.max(value, 12);
+        else if (rarity == Rarity.EPIC) value = Math.max(value, 28);
+        if (item.getMaxDamage() > 0) value = Math.max(value, item.getMaxDamage() > 500 ? 14 : 7);
+        if (item.getMaxCount() <= 16) value = Math.max(value, 5);
+        return MathHelper.clamp(value, 1, 64);
     }
 
     public static int orderPriceFor(Item item, TraderData data, boolean marketInfluence) {
