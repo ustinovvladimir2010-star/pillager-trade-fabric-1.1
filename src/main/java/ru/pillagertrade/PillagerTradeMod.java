@@ -312,8 +312,7 @@ public class PillagerTradeMod implements ModInitializer {
             List<HostileEntity> threats = world.getEntitiesByClass(HostileEntity.class, searchArea,
                     hostile -> hostile.isAlive()
                             && !(hostile instanceof IllagerEntity)
-                            && hostile != guard
-                            && hostile != owner);
+                            && hostile != guard);
             HostileEntity nearest = null;
             double nearestDistance = Double.MAX_VALUE;
             for (HostileEntity hostile : threats) {
