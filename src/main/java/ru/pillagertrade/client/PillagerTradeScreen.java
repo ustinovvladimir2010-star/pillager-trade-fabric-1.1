@@ -87,30 +87,30 @@ public class PillagerTradeScreen extends Screen {
         renderBackground(context);
         int left = (width - 360) / 2;
         int top = (height - 300) / 2;
-        context.fill(left, top, left + 360, top + 300, 0xEE242424);
-        context.drawBorder(left, top, 360, 300, 0xFF8B7653);
+        context.fill(left, top, left + 360, top + 300, 0xFFC6C6C6);
+        context.drawBorder(left, top, 360, 300, 0xFF555555);
         context.drawText(textRenderer, traderName, left + 12, top + 10, 0xFFFFFF, false);
         context.drawText(textRenderer, "Репутация: " + reputation + " | День мира: " + day,
-                left + 12, top + 26, 0xBFBFBF, false);
+                left + 12, top + 26, 0xFF404040, false);
         context.drawText(textRenderer, "Этап торговли: " + stage + " / 5",
-                left + 12, top + 42, 0xE4C98A, false);
+                left + 12, top + 42, 0xFF5A4A2A, false);
         String progress = stage >= 5 ? "Достигнут максимальный этап"
                 : "Для этапа " + (stage + 1) + ": день " + nextStageDay
                 + " и репутация " + nextStageReputation;
-        context.drawText(textRenderer, progress, left + 12, top + 57, 0xBFBFBF, false);
+        context.drawText(textRenderer, progress, left + 12, top + 57, 0xFF555555, false);
         context.drawText(textRenderer, "Специализация: " + specializationName(specialization),
-                left + 12, top + 237, 0xD8C89A, false);
+                left + 12, top + 237, 0xFF5A4A2A, false);
         if (hired) {
             context.drawText(textRenderer, "Этот поборник уже нанят",
-                    left + 12, top + 251, 0x55FF55, false);
+                    left + 12, top + 251, 0xFF267A26, false);
         }
         super.render(context, mouseX, mouseY, delta);
         context.drawItem(new ItemStack(Items.EMERALD), left + 268, top + 8);
-        context.drawText(textRenderer, String.valueOf(emeraldBalance), left + 288, top + 13, 0x55FF55, false);
+        context.drawText(textRenderer, String.valueOf(emeraldBalance), left + 288, top + 13, 0xFF267A26, false);
         for (int i = 0; i < Math.min(8, stock.size()); i++) {
             int rowY = top + 74 + i * 19;
             context.drawItem(new ItemStack(Items.EMERALD), left + 300, rowY + 1);
-            context.drawText(textRenderer, String.valueOf(stock.get(i).price), left + 320, rowY + 5, 0x55FF55, false);
+            context.drawText(textRenderer, String.valueOf(stock.get(i).price), left + 320, rowY + 5, 0xFF267A26, false);
         }
     }
 
