@@ -30,7 +30,12 @@ public class PillagerTradeClient implements ClientModInitializer {
             for (int i = 0; i < count; i++) {
                 stock.add(new PillagerTradeScreen.StockEntry(buf.readString(128), buf.readString(128), buf.readInt()));
             }
-            client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stage, nextStageDay, nextStageReputation, emeraldBalance, stock)));
+            boolean activeQuest = buf.readBoolean();
+            String questItemId = buf.readString(128);
+            String questItemName = buf.readString(128);
+            int questAmount = buf.readInt();
+            int questReward = buf.readInt();
+            client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stage, nextStageDay, nextStageReputation, emeraldBalance, stock, activeQuest, questItemId, questItemName, questAmount, questReward)));
         });
 
         ClientPlayNetworking.registerGlobalReceiver(PillagerTradeMod.SYNC, (client, handler, buf, responseSender) -> {
