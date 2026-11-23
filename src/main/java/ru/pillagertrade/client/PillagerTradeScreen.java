@@ -62,6 +62,8 @@ public class PillagerTradeScreen extends Screen {
                 .dimensions(left + 12, top + 272, 100, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Нанять: 1 день"), b -> send("hire", "", 1, 0))
                 .dimensions(left + 120, top + 272, 112, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Торг: снизить цену"), b -> send("bargain", "", 1, 10))
+                .dimensions(left + 12, top + 250, 120, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.close"), b -> close())
                 .dimensions(left + 240, top + 272, 108, 20).build());
     }
@@ -102,7 +104,7 @@ public class PillagerTradeScreen extends Screen {
                 left + 12, top + 237, 0xFF5A4A2A, false);
         if (hired) {
             context.drawText(textRenderer, "Этот поборник уже нанят",
-                    left + 12, top + 251, 0xFF267A26, false);
+                    left + 140, top + 257, 0xFF267A26, false);
         }
         super.render(context, mouseX, mouseY, delta);
         context.drawItem(new ItemStack(Items.EMERALD), left + 268, top + 8);
