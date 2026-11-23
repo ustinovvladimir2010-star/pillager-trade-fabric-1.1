@@ -253,8 +253,10 @@ public class PillagerTradeMod implements ModInitializer {
                                 .offset(px - guard.getX(), py - guard.getY(), pz - guard.getZ());
                         net.minecraft.util.math.BlockPos feet = new net.minecraft.util.math.BlockPos(
                                 (int) Math.floor(px), (int) Math.floor(py), (int) Math.floor(pz));
+                        net.minecraft.util.math.BlockPos floor = feet.down();
                         if (world.isSpaceEmpty(guard, candidate)
-                                && world.getBlockState(feet).getFluidState().isEmpty()) {
+                                && world.getBlockState(feet).getFluidState().isEmpty()
+                                && world.getBlockState(floor).isSolidBlock(world, floor)) {
                             guard.requestTeleport(px, py, pz);
                             guard.getNavigation().stop();
                             return true;
