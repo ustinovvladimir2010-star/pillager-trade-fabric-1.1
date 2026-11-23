@@ -22,6 +22,33 @@ public class TradeState extends PersistentState {
     private static final int[] STAGE_REPUTATION = {0, 15, 30, 50, 70};
 
     private final Map<UUID, TraderData> traders = new HashMap<>();
+    private final Set<UUID> marketInfluencePlayers = new HashSet<>();
+    private long baronArrivalTime = 0L;
+    private UUID baronEntityId;
+    private boolean baronDefeated = false;
+
+    public boolean hasMarketInfluence(UUID playerId) {
+        return marketInfluencePlayers.contains(playerId);
+    }
+
+    public void grantMarketInfluence(UUID playerId) {
+        if (marketInfluencePlayers.add(playerId)) markDirty();
+    }
+
+    public long getBaronArrivalTime() { return baronArrivalTime; }
+    public void setBaronArrivalTime(long value) { baronArrivalTime = value; markDirty(); }
+    public UUID getBaronEntityId() { return baronEntityId; }
+    public void setBaronEntityId(UUID value) { baronEntityId = value; markDirty(); }
+    public boolean isBaronDefeated() { return baronDefeated; }
+    public void setBaronDefeated(boolean value) { baronDefeated = value; markDirty(); }
+
+    public int countMaximumRankTraders(long worldDay) {
+        int count = 0;
+        for (TraderData data : traders.values()) {
+            if (getStage(worldDay, data.reputation) >= 5) count++;
+        }
+        return count;
+    }
 
     public static TradeState get(ServerWorld world) {
         return world.getPersistentStateManager().getOrCreate(TradeState::fromNbt, TradeState::new, "pillager_trade_state");
@@ -328,11 +355,25 @@ public class TradeState extends PersistentState {
             list.add(tag);
         }
         nbt.put("traders", list);
+        NbtList influence = new NbtList();
+        for (UUID id : marketInfluencePlayers) influence.add(net.minecraft.nbt.NbtString.of(id.toString()));
+        nbt.put("marketInfluencePlayers", influence);
+        nbt.putLong("baronArrivalTime", baronArrivalTime);
+        if (baronEntityId != null) nbt.putUuid("baronEntityId", baronEntityId);
+        nbt.putBoolean("baronDefeated", baronDefeated);
         return nbt;
     }
 
     public static TradeState fromNbt(NbtCompound nbt) {
         TradeState state = new TradeState();
+        NbtList influence = nbt.getList("marketInfluencePlayers", 8);
+        for (int i = 0; i < influence.size(); i++) {
+            try { state.marketInfluencePlayers.add(UUID.fromString(influence.getString(i))); }
+            catch (IllegalArgumentException ignored) { }
+        }
+        state.baronArrivalTime = nbt.getLong("baronArrivalTime");
+        if (nbt.containsUuid("baronEntityId")) state.baronEntityId = nbt.getUuid("baronEntityId");
+        state.baronDefeated = nbt.getBoolean("baronDefeated");
         NbtList list = nbt.getList("traders", 10);
         for (int i = 0; i < list.size(); i++) {
             NbtCompound tag = list.getCompound(i);
