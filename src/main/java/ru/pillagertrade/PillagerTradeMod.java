@@ -235,10 +235,10 @@ public class PillagerTradeMod implements ModInitializer {
     }
 
     private static String displayItemName(Item item) {
-        String english = item.getName().getString();
-        if (english == null || english.isBlank()) return Registries.ITEM.getId(item).getPath();
-        String lower = english.toLowerCase(java.util.Locale.ROOT);
-        java.util.Map<String, String> dictionary = java.util.Map.ofEntries(
+        String original = item.getName().getString();
+        if (original == null || original.isBlank()) original = Registries.ITEM.getId(item).getPath();
+        String lower = original.toLowerCase(java.util.Locale.ROOT);
+        java.util.Map<String, String> exact = java.util.Map.ofEntries(
                 java.util.Map.entry("iron ingot", "железный слиток"),
                 java.util.Map.entry("gold ingot", "золотой слиток"),
                 java.util.Map.entry("diamond", "алмаз"),
@@ -258,11 +258,38 @@ public class PillagerTradeMod implements ModInitializer {
                 java.util.Map.entry("ender pearl", "жемчуг эндера"),
                 java.util.Map.entry("amethyst shard", "осколок аметиста")
         );
-        String known = dictionary.get(lower);
-        if (known != null) return known;
-        String path = Registries.ITEM.getId(item).getPath().replace('_', ' ');
-        return path;
+        if (exact.containsKey(lower)) return exact.get(lower);
+
+        String path = Registries.ITEM.getId(item).getPath().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+        java.util.Map<String, String> words = java.util.Map.ofEntries(
+                java.util.Map.entry("iron", "железный"), java.util.Map.entry("gold", "золотой"),
+                java.util.Map.entry("copper", "медный"), java.util.Map.entry("diamond", "алмазный"),
+                java.util.Map.entry("netherite", "незеритовый"), java.util.Map.entry("steel", "стальной"),
+                java.util.Map.entry("wooden", "деревянный"), java.util.Map.entry("stone", "каменный"),
+                java.util.Map.entry("sword", "меч"), java.util.Map.entry("axe", "топор"),
+                java.util.Map.entry("pickaxe", "кирка"), java.util.Map.entry("shovel", "лопата"),
+                java.util.Map.entry("hoe", "мотыга"), java.util.Map.entry("helmet", "шлем"),
+                java.util.Map.entry("chestplate", "нагрудник"), java.util.Map.entry("leggings", "поножи"),
+                java.util.Map.entry("boots", "ботинки"), java.util.Map.entry("ingot", "слиток"),
+                java.util.Map.entry("nugget", "самородок"), java.util.Map.entry("ore", "руда"),
+                java.util.Map.entry("block", "блок"), java.util.Map.entry("gem", "самоцвет"),
+                java.util.Map.entry("crystal", "кристалл"), java.util.Map.entry("shard", "осколок"),
+                java.util.Map.entry("dust", "пыль"), java.util.Map.entry("plate", "пластина"),
+                java.util.Map.entry("gear", "шестерня"), java.util.Map.entry("machine", "механизм"),
+                java.util.Map.entry("bow", "лук"), java.util.Map.entry("crossbow", "арбалет"),
+                java.util.Map.entry("shield", "щит"), java.util.Map.entry("apple", "яблоко"),
+                java.util.Map.entry("bread", "хлеб"), java.util.Map.entry("berry", "ягода"),
+                java.util.Map.entry("potion", "зелье"), java.util.Map.entry("staff", "посох")
+        );
+        StringBuilder translated = new StringBuilder();
+        for (String word : path.split(" ")) {
+            String value = words.getOrDefault(word, word);
+            if (translated.length() > 0) translated.append(' ');
+            translated.append(value);
+        }
+        return translated.toString();
     }
+
 
     private static void handleAction(ServerPlayerEntity player, String action, UUID traderId, String itemId, int amount, int offer) {
         ServerWorld world = player.getServerWorld();
