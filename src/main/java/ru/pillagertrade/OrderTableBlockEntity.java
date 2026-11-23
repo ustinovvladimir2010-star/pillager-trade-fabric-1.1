@@ -72,7 +72,11 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
                 pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 64.0) return false;
 
         int requestedAmount = Math.min(8, sample.getItem().getMaxCount());
-        int cost = TradeState.orderPriceFor(sample.getItem()) * requestedAmount;
+        TradeState state = TradeState.get(serverWorld);
+        TradeState.TraderData traderData = state.get(traderId);
+        if (traderData == null) return false;
+        int cost = TradeState.orderPriceFor(sample.getItem(), traderData,
+                state.hasMarketInfluence(player.getUuid())) * requestedAmount;
         if (!PillagerTradeMod.removeEmeralds(player, cost)) {
             player.sendMessage(Text.literal("Недостаточно изумрудов. Заказ стоит " + cost + " изумрудов."), true);
             PillagerTradeMod.syncEmeraldBalance(player);
@@ -82,7 +86,6 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
         owner = player.getUuid();
         trader = traderId;
         itemId = Registries.ITEM.getId(sample.getItem()).toString();
-        TradeState.TraderData traderData = TradeState.get(serverWorld).get(traderId);
         deliveryChancePercent = (int) Math.round(deliveryChance(sample.getItem(), traderData == null ? 0 : traderData.reputation) * 100.0);
         emeraldCost = cost;
         startTime = serverWorld.getTime();
