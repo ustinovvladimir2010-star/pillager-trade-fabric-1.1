@@ -6,6 +6,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.entity.mob.PillagerEntity;
+import net.minecraft.entity.mob.VindicatorEntity;
+import net.minecraft.entity.mob.IllagerEntity;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.LivingEntity;
@@ -86,7 +88,9 @@ public class PillagerTradeMod implements ModInitializer {
         });
 
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            if (!(entity instanceof PillagerEntity pillager) || hand != Hand.MAIN_HAND) return ActionResult.PASS;
+            if (!(entity instanceof PillagerEntity) && !(entity instanceof VindicatorEntity)) return ActionResult.PASS;
+            if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
+            IllagerEntity pillager = (IllagerEntity) entity;
             if (player.isSneaking()) return ActionResult.PASS;
             if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
                 openTrader(serverPlayer, pillager);
@@ -103,7 +107,7 @@ public class PillagerTradeMod implements ModInitializer {
         });
     }
 
-    private static void openTrader(ServerPlayerEntity player, PillagerEntity pillager) {
+    private static void openTrader(ServerPlayerEntity player, IllagerEntity pillager) {
         TradeState state = TradeState.get(player.getServerWorld());
         TradeState.TraderData data = state.getOrCreate(pillager);
         PacketByteBuf out = PacketByteBufs.create();
@@ -135,7 +139,7 @@ public class PillagerTradeMod implements ModInitializer {
         TradeState state = TradeState.get(world);
         TradeState.TraderData data = state.get(traderId);
         if (data == null) return;
-        if (!(world.getEntity(traderId) instanceof PillagerEntity pillager) || !pillager.isAlive()
+        if (!(world.getEntity(traderId) instanceof IllagerEntity pillager) || !pillager.isAlive()
                 || player.squaredDistanceTo(pillager) > 64.0) return;
 
         if ("buy".equals(action)) {
@@ -214,30 +218,54 @@ public class PillagerTradeMod implements ModInitializer {
      */
     private static void tickHiredGuards(ServerWorld world) {
         TradeState state = TradeState.get(world);
+        boolean changed = false;
+
         for (var entry : state.getTraders().entrySet()) {
             TradeState.TraderData data = entry.getValue();
-            if (!data.hired || data.hireOwner == null) continue;
+            if (!data.hired) continue;
 
-            if (!(world.getEntity(entry.getKey()) instanceof PillagerEntity guard) || !guard.isAlive()) {
+            // Expire contracts by world time, not only at the day-boundary callback.
+            if (world.getTime() >= data.hireUntil) {
+                data.hired = false;
+                data.hireOwner = null;
+                data.hireUntil = 0L;
+                if (world.getEntity(entry.getKey()) instanceof IllagerEntity expiredGuard) {
+                    expiredGuard.setTarget(null);
+                    expiredGuard.getNavigation().stop();
+                }
+                changed = true;
+                continue;
+            }
+            if (data.hireOwner == null) continue;
+
+            // Both vanilla guard types are supported: Pillagers keep their crossbow,
+            // Vindicators keep their axe and use their own melee combat AI.
+            if (!(world.getEntity(entry.getKey()) instanceof IllagerEntity guard) || !guard.isAlive()) {
                 continue;
             }
             ServerPlayerEntity owner = world.getServer().getPlayerManager().getPlayer(data.hireOwner);
-            if (owner == null || !owner.isAlive()) {
+            if (owner == null || !owner.isAlive() || owner.getWorld() != world) {
+                guard.getNavigation().stop();
                 continue;
             }
 
-            // Look for hostile mobs threatening the owner or the guard.
-            Box searchArea = owner.getBoundingBox().expand(12.0);
+            // Search around both the owner and the guard so a guard can intercept
+            // threats approaching from either direction.
+            Box searchArea = owner.getBoundingBox().expand(14.0).union(guard.getBoundingBox().expand(10.0));
             List<HostileEntity> threats = world.getEntitiesByClass(HostileEntity.class, searchArea,
-                    hostile -> hostile.isAlive() && hostile != guard
-                            && !(hostile instanceof PillagerEntity));
+                    hostile -> hostile.isAlive()
+                            && !(hostile instanceof IllagerEntity)
+                            && hostile != guard
+                            && hostile != owner);
             HostileEntity nearest = null;
             double nearestDistance = Double.MAX_VALUE;
             for (HostileEntity hostile : threats) {
-                double distance = guard.squaredDistanceTo(hostile);
                 boolean threateningOwner = hostile.getTarget() == owner
-                        || hostile.squaredDistanceTo(owner) <= 36.0;
-                if (threateningOwner && distance < nearestDistance) {
+                        || hostile.squaredDistanceTo(owner) <= 100.0
+                        || hostile.getTarget() == guard;
+                if (!threateningOwner) continue;
+                double distance = guard.squaredDistanceTo(hostile);
+                if (distance < nearestDistance) {
                     nearest = hostile;
                     nearestDistance = distance;
                 }
@@ -245,22 +273,30 @@ public class PillagerTradeMod implements ModInitializer {
 
             if (nearest != null) {
                 if (guard.getTarget() != nearest) guard.setTarget(nearest);
-            } else {
-                LivingEntity currentTarget = guard.getTarget();
-                if (currentTarget instanceof HostileEntity && currentTarget.isAlive()) {
-                    // Let the pillager finish its current fight before returning.
-                    continue;
-                }
-                if (currentTarget != null) guard.setTarget(null);
+                // Do not issue follow commands while combat AI is active.
+                continue;
+            }
 
-                double distanceToOwner = guard.squaredDistanceTo(owner);
-                if (distanceToOwner > 25.0) {
-                    guard.getNavigation().startMovingTo(owner, 1.15);
-                } else if (distanceToOwner < 9.0 && guard.getNavigation().isFollowingPath()) {
-                    guard.getNavigation().stop();
+            LivingEntity currentTarget = guard.getTarget();
+            if (currentTarget instanceof HostileEntity hostile
+                    && hostile.isAlive() && !(hostile instanceof IllagerEntity)) {
+                // Finish an already-started fight before returning to the owner.
+                continue;
+            }
+            if (currentTarget != null) guard.setTarget(null);
+
+            double distanceToOwner = guard.squaredDistanceTo(owner);
+            if (distanceToOwner > 36.0) {
+                // Re-path periodically instead of resetting navigation every tick.
+                if (world.getTime() % 10L == 0L) {
+                    guard.getNavigation().startMovingTo(owner, guard instanceof VindicatorEntity ? 1.12 : 1.08);
                 }
+            } else if (distanceToOwner < 12.25 && guard.getNavigation().isFollowingPath()) {
+                guard.getNavigation().stop();
             }
         }
+
+        if (changed) state.markDirty();
     }
 
     public static int countEmeralds(ServerPlayerEntity player) {
