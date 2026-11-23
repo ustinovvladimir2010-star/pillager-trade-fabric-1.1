@@ -18,8 +18,8 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
     public OrderTableScreen(OrderTableScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         this.backgroundWidth = 330;
-        this.backgroundHeight = 210;
-        this.playerInventoryTitleY = 92;
+        this.backgroundHeight = 250;
+        this.playerInventoryTitleY = 128;
         this.titleY = 6;
     }
 
@@ -33,7 +33,7 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
                 .dimensions(x + 174, y + 10, 72, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Призыв"), b -> setTab(true))
                 .dimensions(x + 250, y + 10, 72, 20).build());
-        int shown = Math.min(5, handler.getTraders().size());
+        int shown = Math.min(3, handler.getTraders().size());
         for (int i = 0; i < shown; i++) {
             final int index = i;
             OrderTableScreenHandler.TraderOption trader = handler.getTraders().get(i);
@@ -87,19 +87,19 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
         if (summonTab) {
             context.drawText(textRenderer, "Подкрепление из 1–3 разбойников:", x + 174, y + 34, 0xFFE0E0E0, false);
         } else if (handler.getTable().hasActiveOrder() && !handler.getTable().isSummonOrder()) {
-            context.drawText(textRenderer, "Шанс доставки: " + handler.getTable().getDeliveryChancePercent() + "%", x + 174, y + 132, 0xFF70D080, false);
+            context.drawText(textRenderer, "Шанс доставки: " + handler.getTable().getDeliveryChancePercent() + "%", x + 174, y + 104, 0xFF70D080, false);
         }
         if (!summonTab && handler.getTraders().isEmpty()) {
             context.drawText(textRenderer, "Нет поборников в радиусе 16 блоков", x + 174, y + 38, 0xFFFF7777, false);
         }
         if (handler.getTable().hasActiveOrder()) {
             int progress = handler.getTable().getProgress(client.world == null ? 0L : client.world.getTime());
-            int barX = x + 174, barY = y + 148, barW = 148, barH = 9;
+            int barX = x + 174, barY = y + 130, barW = 148, barH = 9;
             context.fill(barX, barY, barX + barW, barY + barH, 0xFF111111);
             context.fill(barX + 1, barY + 1, barX + 1 + (barW - 2) * progress / 100, barY + barH - 1, 0xFF35B85A);
             context.drawBorder(barX, barY, barW, barH, 0xFF666666);
             context.drawText(textRenderer, "Доставка: " + progress + "%", barX, barY - 12, 0xFFE0E0E0, false);
-            context.drawText(textRenderer, "Заказ выполняется", x + 174, y + 164, 0xFFE0E0E0, false);
+            context.drawText(textRenderer, "Заказ выполняется", x + 174, y + 148, 0xFFE0E0E0, false);
         } else if (handler.getTable().isReady()) {
             context.drawText(textRenderer, "Заказ доставлен!", x + 174, y + 164, 0xFF70D080, false);
         } else if (handler.getTable().isFailed()) {
@@ -118,7 +118,7 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
         int bx = (width - backgroundWidth) / 2 + 174;
         int by = (height - backgroundHeight) / 2;
         if (summonTab) drawDarkButton(context, bx, by + 54, 148, 22, "Заказать подкрепление", mouseX, mouseY);
-        else for (int i = 0; i < Math.min(5, handler.getTraders().size()); i++) {
+        else for (int i = 0; i < Math.min(3, handler.getTraders().size()); i++) {
             OrderTableScreenHandler.TraderOption trader = handler.getTraders().get(i);
             drawDarkButton(context, bx, by + 34 + i * 22, 148, 20, trader.name() + " | ур. " + trader.strength(), mouseX, mouseY);
         }
