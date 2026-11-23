@@ -207,7 +207,7 @@ public class PillagerTradeMod implements ModInitializer {
         for (Item item : stock) {
             Identifier id = Registries.ITEM.getId(item);
             out.writeString(id.toString());
-            out.writeString(displayItemName(item));
+            out.writeString(item.getTranslationKey());
             out.writeInt(TradeState.priceFor(item, data, state.hasMarketInfluence(player.getUuid())));
         }
         TradeState.QuestData activeQuest = state.getQuest(player.getUuid());
@@ -215,7 +215,7 @@ public class PillagerTradeMod implements ModInitializer {
         if (activeQuest != null) {
             Item questItem = Registries.ITEM.getOrEmpty(new Identifier(activeQuest.itemId)).orElse(Items.AIR);
             out.writeString(activeQuest.itemId);
-            out.writeString(displayItemName(questItem));
+            out.writeString(questItem.getTranslationKey());
             out.writeInt(activeQuest.amount);
             out.writeInt(activeQuest.reward);
         } else if (!stock.isEmpty()) {
