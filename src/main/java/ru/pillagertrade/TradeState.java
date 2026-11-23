@@ -321,6 +321,16 @@ public class TradeState extends PersistentState {
         else if (containsAny(path, "bread", "torch", "planks", "cobblestone", "dirt", "sand", "gravel", "stick", "wheat", "seeds")) value = 1;
         else value = 2;
 
+        int progressionTier = getItemTier(item);
+        int tierMinimum = switch (progressionTier) {
+            case 1 -> 1;
+            case 2 -> 4;
+            case 3 -> 9;
+            case 4 -> 18;
+            default -> 30;
+        };
+        value = Math.max(value, tierMinimum);
+
         Rarity rarity = item.getDefaultStack().getRarity();
         if (rarity == Rarity.UNCOMMON) value = Math.max(value, 5);
         else if (rarity == Rarity.RARE) value = Math.max(value, 12);
