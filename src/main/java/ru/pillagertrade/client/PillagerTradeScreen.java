@@ -131,8 +131,8 @@ public class PillagerTradeScreen extends Screen {
                 context.drawText(textRenderer, "Награда: " + questReward + " изумрудов", left + 12, top + 148, 0xFF70D080, false);
                 context.drawText(textRenderer, "Другие задания откроются после выполнения.", left + 12, top + 178, 0xFFB0B0B0, false);
             } else {
-                context.drawText(textRenderer, "Поиск предметов:", left + 12, top + 80, 0xFFE0E0E0, false);
-                context.drawText(textRenderer, questAmount + " x " + questItemName, left + 12, top + 104, 0xFFFFFFFF, false);
+                context.drawText(textRenderer, questItemId.startsWith("kill:") ? "Охотничье задание:" : "Поиск предметов:", left + 12, top + 80, 0xFFE0E0E0, false);
+                context.drawText(textRenderer, questItemId.startsWith("kill:") ? questItemName : questAmount + " x " + questItemName, left + 12, top + 104, 0xFFFFFFFF, false);
                 context.drawText(textRenderer, "Награда: " + questReward + " изумрудов", left + 12, top + 128, 0xFF70D080, false);
                 context.drawText(textRenderer, "Одновременно можно выполнять только одно задание.", left + 12, top + 158, 0xFFB0B0B0, false);
             }
