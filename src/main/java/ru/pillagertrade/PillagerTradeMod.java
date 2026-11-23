@@ -245,6 +245,7 @@ public class PillagerTradeMod implements ModInitializer {
             }
             ServerPlayerEntity owner = world.getServer().getPlayerManager().getPlayer(data.hireOwner);
             if (owner == null || !owner.isAlive() || owner.getWorld() != world) {
+                guard.setTarget(null);
                 guard.getNavigation().stop();
                 continue;
             }
