@@ -67,6 +67,15 @@ public class PillagerTradeMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        ServerPlayNetworking.registerGlobalReceiver(new Identifier(MOD_ID, "summon_order"), (server, player, handler, buf, responseSender) -> {
+            net.minecraft.util.math.BlockPos pos = buf.readBlockPos();
+            server.execute(() -> {
+                if (player.currentScreenHandler instanceof OrderTableScreenHandler screen
+                        && screen.getTable().getPos().equals(pos)) {
+                    screen.getTable().startSummonOrder(player);
+                }
+            });
+        });
         ServerPlayNetworking.registerGlobalReceiver(ORDER_START, (server, player, handler, buf, responseSender) -> {
             net.minecraft.util.math.BlockPos pos = buf.readBlockPos();
             int index = buf.readVarInt();
