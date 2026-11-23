@@ -40,8 +40,7 @@ public class PillagerTradeClient implements ClientModInitializer {
                 java.util.Map.entry("staff", "посох"), java.util.Map.entry("hammer", "молот"),
                 java.util.Map.entry("spear", "копьё"), java.util.Map.entry("knife", "нож"),
                 java.util.Map.entry("ring", "кольцо"), java.util.Map.entry("amulet", "амулет"),
-                java.util.Map.entry("helmet", "шлем"), java.util.Map.entry("armor", "броня"),
-                java.util.Map.entry("boots", "ботинки"), java.util.Map.entry("leggings", "поножи"),
+                java.util.Map.entry("armor", "броня"),
                 java.util.Map.entry("wrench", "ключ"), java.util.Map.entry("circuit", "схема"),
                 java.util.Map.entry("motor", "двигатель"), java.util.Map.entry("battery", "батарея"),
                 java.util.Map.entry("fuel", "топливо"), java.util.Map.entry("coal", "уголь"),
@@ -51,7 +50,7 @@ public class PillagerTradeClient implements ClientModInitializer {
                 java.util.Map.entry("food", "еда"), java.util.Map.entry("meat", "мясо"),
                 java.util.Map.entry("fish", "рыба"), java.util.Map.entry("seed", "семена"),
                 java.util.Map.entry("bucket", "ведро"), java.util.Map.entry("arrow", "стрела"),
-                java.util.Map.entry("bolt", "болт"), java.util.Map.entry("crystal", "кристалл"),
+                java.util.Map.entry("bolt", "болт"),
                 java.util.Map.entry("fragment", "фрагмент"), java.util.Map.entry("essence", "эссенция"),
                 java.util.Map.entry("upgrade", "улучшение"), java.util.Map.entry("template", "шаблон")
         );
