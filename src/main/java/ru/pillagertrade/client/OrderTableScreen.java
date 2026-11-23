@@ -25,6 +25,11 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
         super.init();
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
+        addDrawableChild(ButtonWidget.builder(Text.literal("Призвать разбойников • 24 изумруда"), button -> {
+            PacketByteBuf buf = PacketByteBufs.create();
+            buf.writeBlockPos(handler.getTable().getPos());
+            ClientPlayNetworking.send(new net.minecraft.util.Identifier(PillagerTradeMod.MOD_ID, "summon_order"), buf);
+        }).dimensions(x + 174, y + 148, 148, 20).build());
         int shown = Math.min(5, handler.getTraders().size());
         for (int i = 0; i < shown; i++) {
             final int index = i;
