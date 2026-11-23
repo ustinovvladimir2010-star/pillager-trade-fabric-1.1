@@ -63,23 +63,34 @@ public class PillagerTradeScreen extends Screen {
     protected void init() {
         int left = (width - 360) / 2;
         int top = (height - 300) / 2;
-
+        addDrawableChild(ButtonWidget.builder(Text.literal("Торговля"), b -> setTab(false))
+                .dimensions(left + 12, top + 8, 88, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Задания"), b -> setTab(true))
+                .dimensions(left + 104, top + 8, 88, 20).build());
         for (int i = 0; i < Math.min(8, stock.size()); i++) {
             final int index = i;
-            addDrawableChild(ButtonWidget.builder(
-                    Text.literal(stock.get(i).name),
-                    b -> selected = index)
-                    .dimensions(left + 12, top + 74 + i * 19, 280, 18).build());
+            ButtonWidget button = ButtonWidget.builder(Text.literal(stock.get(i).name), b -> selected = index)
+                    .dimensions(left + 12, top + 74 + i * 19, 280, 18).build();
+            tradeButtons.add(addDrawableChild(button));
         }
-
-        addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.buy"), b -> buySelected())
-                .dimensions(left + 12, top + 272, 100, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("Нанять: 1 день"), b -> send("hire", "", 1, 0))
-                .dimensions(left + 120, top + 272, 112, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("Торг: +10% скидки"), b -> send("bargain", "", 1, 10))
-                .dimensions(left + 12, top + 250, 120, 20).build());
+        tradeButtons.add(addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.buy"), b -> buySelected())
+                .dimensions(left + 12, top + 272, 100, 20).build()));
+        tradeButtons.add(addDrawableChild(ButtonWidget.builder(Text.literal("Нанять: 1 день"), b -> send("hire", "", 1, 0))
+                .dimensions(left + 120, top + 272, 112, 20).build()));
+        tradeButtons.add(addDrawableChild(ButtonWidget.builder(Text.literal("Торг: +10% скидки"), b -> send("bargain", "", 1, 10))
+                .dimensions(left + 12, top + 250, 120, 20).build()));
         addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.close"), b -> close())
                 .dimensions(left + 240, top + 272, 108, 20).build());
+        questActionButton = addDrawableChild(ButtonWidget.builder(Text.literal(activeQuest ? "Сдать предметы" : "Принять задание"),
+                b -> send(activeQuest ? "quest_complete" : "quest_accept", questItemId, questAmount, questReward))
+                .dimensions(left + 12, top + 220, 150, 22).build());
+        setTab(false);
+    }
+
+    private void setTab(boolean quests) {
+        questsTab = quests;
+        for (ButtonWidget button : tradeButtons) button.visible = !quests;
+        if (questActionButton != null) questActionButton.visible = quests;
     }
 
     private void buySelected() {
