@@ -342,7 +342,8 @@ public class TradeState extends PersistentState {
 
     public static int orderPriceFor(Item item, TraderData data, boolean marketInfluence) {
         int base = orderPriceFor(item);
-        int totalDiscount = Math.min(60, data.tradeDiscount + (marketInfluence ? 10 : 0));
+        int itemDiscount = data.itemDiscounts.getOrDefault(Registries.ITEM.getId(item).toString(), 0);
+        int totalDiscount = Math.min(10, itemDiscount + (marketInfluence ? 10 : 0));
         return Math.max(1, (int) Math.ceil(base * (100 - totalDiscount) / 100.0));
     }
 
@@ -370,7 +371,8 @@ public class TradeState extends PersistentState {
         }
 
         int normalPrice = Math.max(1, base - data.reputation / 25 + data.strength);
-        int totalDiscount = Math.min(60, data.tradeDiscount + (marketInfluence ? 10 : 0));
+        int itemDiscount = data.itemDiscounts.getOrDefault(Registries.ITEM.getId(item).toString(), 0);
+        int totalDiscount = Math.min(10, itemDiscount + (marketInfluence ? 10 : 0));
         return Math.max(1, (int) Math.ceil(normalPrice * (100 - totalDiscount) / 100.0));
     }
     @Override
@@ -383,7 +385,10 @@ public class TradeState extends PersistentState {
             tag.putInt("reputation", d.reputation);
             tag.putInt("specialization", d.specialization);
             tag.putInt("strength", d.strength);
-            tag.putInt("tradeDiscount", d.tradeDiscount);
+            tag.putInt("tradeDiscount", 0);
+            NbtCompound discounts = new NbtCompound();
+            for (Map.Entry<String, Integer> discount : d.itemDiscounts.entrySet()) discounts.putInt(discount.getKey(), discount.getValue());
+            tag.put("itemDiscounts", discounts);
             tag.putLong("createdDay", d.createdDay);
             tag.putLong("seed", d.seed);
             tag.putBoolean("hired", d.hired);
@@ -457,7 +462,9 @@ public class TradeState extends PersistentState {
             d.reputation = tag.getInt("reputation");
             d.specialization = tag.getInt("specialization");
             d.strength = tag.getInt("strength");
-            d.tradeDiscount = tag.getInt("tradeDiscount");
+            d.tradeDiscount = 0;
+            NbtCompound discounts = tag.getCompound("itemDiscounts");
+            for (String key : discounts.getKeys()) d.itemDiscounts.put(key, MathHelper.clamp(discounts.getInt(key), 0, 10));
             d.createdDay = tag.getLong("createdDay");
             d.seed = tag.contains("seed") ? tag.getLong("seed") : tag.getUuid("id").getMostSignificantBits();
             d.hired = tag.getBoolean("hired");
@@ -491,7 +498,8 @@ public class TradeState extends PersistentState {
         public int reputation = 0;
         public int specialization = 0;
         public int strength = 1;
-        public int tradeDiscount = 0;
+        public int tradeDiscount = 0; // legacy field, no longer used
+        public final Map<String, Integer> itemDiscounts = new HashMap<>();
         public long createdDay = 0;
         public long seed = new Random().nextLong();
         public boolean hired = false;
