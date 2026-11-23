@@ -235,12 +235,15 @@ public class PillagerTradeMod implements ModInitializer {
             out.writeInt(activeQuest.amount);
             out.writeInt(activeQuest.reward);
         } else if (!stock.isEmpty()) {
-            Item questItem = stock.get(player.getRandom().nextInt(stock.size()));
+            long offerSeed = player.getUuid().getMostSignificantBits()
+                    ^ player.getUuid().getLeastSignificantBits() ^ (day * 0x9E3779B97F4A7C15L);
+            java.util.Random offerRandom = new java.util.Random(offerSeed);
+            Item questItem = stock.get(offerRandom.nextInt(stock.size()));
             int amount = Math.min(4, questItem.getMaxCount());
             out.writeString(Registries.ITEM.getId(questItem).toString());
             out.writeString(displayItemName(questItem));
             out.writeInt(amount);
-            out.writeInt(Math.max(4, TradeState.orderPriceFor(questItem) * amount * 2));
+            out.writeInt(Math.max(1, TradeState.priceFor(questItem, data, false) * amount / 2));
         } else {
             out.writeString("");
             out.writeString("Нет доступных заданий");
@@ -323,7 +326,7 @@ public class PillagerTradeMod implements ModInitializer {
             int currentStage = TradeState.getStage(currentDay, data.reputation);
             boolean questWasOffered = state.getStock(data, currentStage).contains(questItem);
             int questAmount = Math.max(1, Math.min(4, Math.min(64, amount)));
-            int questReward = Math.max(4, TradeState.orderPriceFor(questItem) * questAmount * 2);
+            int questReward = Math.max(1, TradeState.priceFor(questItem, data, false) * questAmount / 2);
             if (questItem == Items.AIR || !questWasOffered
                     || !state.acceptQuest(player.getUuid(), itemId, questAmount, questReward)) {
                 player.sendMessage(Text.literal("У вас уже есть активное задание или предмет недоступен."), true);
