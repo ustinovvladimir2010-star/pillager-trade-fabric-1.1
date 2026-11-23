@@ -134,8 +134,15 @@ public class PillagerTradeMod implements ModInitializer {
                 int reward = 16 + world.getRandom().nextInt(17);
                 ItemStack emeralds = new ItemStack(Items.EMERALD, reward);
                 if (!player.getInventory().insertStack(emeralds)) player.dropItem(emeralds, false);
-                player.sendMessage(Text.literal("Криминальный барон повержен! Вы получили " + reward
-                        + " изумрудов и постоянный эффект «Рыночное влияние»: скидка 10% на заказы."), false);
+                int gold = 4 + world.getRandom().nextInt(5);
+                int diamonds = 1 + world.getRandom().nextInt(2);
+                ItemStack goldLoot = new ItemStack(Items.GOLD_INGOT, gold);
+                ItemStack diamondLoot = new ItemStack(Items.DIAMOND, diamonds);
+                if (!player.getInventory().insertStack(goldLoot)) player.dropItem(goldLoot, false);
+                if (!player.getInventory().insertStack(diamondLoot)) player.dropItem(diamondLoot, false);
+                player.sendMessage(Text.literal("Криминальный барон повержен! Добыча: " + reward
+                        + " изумрудов, " + gold + " золота, " + diamonds
+                        + " алмаз(а), трость барона и постоянное рыночное влияние."), false);
             } else {
                 world.getPlayers().forEach(player -> player.sendMessage(
                         Text.literal("Криминальный барон повержен, но награду не получил игрок."), false));
