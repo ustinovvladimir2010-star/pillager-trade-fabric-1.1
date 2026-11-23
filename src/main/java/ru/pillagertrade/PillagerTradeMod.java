@@ -236,7 +236,8 @@ public class PillagerTradeMod implements ModInitializer {
         TradeState.QuestData activeQuest = state.getQuest(player.getUuid());
         out.writeBoolean(activeQuest != null);
         if (activeQuest != null) {
-            Item questItem = Registries.ITEM.getOrEmpty(new Identifier(activeQuest.itemId)).orElse(Items.AIR);
+            Item questItem = activeQuest.itemId.startsWith("kill:") ? Items.AIR
+                    : Registries.ITEM.getOrEmpty(new Identifier(activeQuest.itemId)).orElse(Items.AIR);
             out.writeString(activeQuest.itemId);
             out.writeString(questItem.getTranslationKey());
             out.writeInt(activeQuest.amount);
