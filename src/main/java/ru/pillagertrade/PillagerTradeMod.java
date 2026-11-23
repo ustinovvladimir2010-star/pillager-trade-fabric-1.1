@@ -398,19 +398,28 @@ public class PillagerTradeMod implements ModInitializer {
             player.sendMessage(Text.literal("Поборник нанят на 1 игровой день. Оплата: " + daily + " изумрудов."), true);
             syncEmeraldBalance(player);
         } else if ("bargain".equals(action)) {
-            int base = 10;
-            double chance = MathHelper.clamp(0.65 - Math.max(0, base - offer) * 0.025 + data.reputation * 0.002, 0.05, 0.9);
-            double roll = world.getRandom().nextDouble();
-            if (roll < chance) {
-                data.tradeDiscount = Math.min(50, data.tradeDiscount + 10);
-                data.reputation = Math.min(100, data.reputation + 1);
-                player.sendMessage(Text.literal("Торг удался! Постоянная скидка на покупки: " + data.tradeDiscount + "%."), true);
-            } else if (roll < chance + 0.20) {
-                player.sendMessage(Text.literal("Поборник возмутился. В этот раз торг не удался."), true);
+            Item bargainItem;
+            try { bargainItem = Registries.ITEM.getOrEmpty(new Identifier(itemId)).orElse(Items.AIR); }
+            catch (IllegalArgumentException exception) { return; }
+            String bargainKey = Registries.ITEM.getId(bargainItem).toString();
+            if (bargainItem == Items.AIR || !data.itemDiscounts.containsKey(bargainKey)) {
+                int base = 10;
+                double chance = MathHelper.clamp(0.65 - Math.max(0, base - offer) * 0.025 + data.reputation * 0.002, 0.05, 0.9);
+                double roll = world.getRandom().nextDouble();
+                if (roll < chance) {
+                    data.itemDiscounts.put(bargainKey, 10);
+                    data.reputation = Math.min(100, data.reputation + 1);
+                    player.sendMessage(Text.literal("Торг удался! Скидка 10% на " + displayItemName(bargainItem)
+                            + " только у этого торговца. Повторный торг за этот предмет невозможен."), true);
+                } else if (roll < chance + 0.20) {
+                    player.sendMessage(Text.literal("Поборник возмутился. В этот раз торг не удался."), true);
+                } else {
+                    player.sendMessage(Text.literal("Поборник отказался торговаться."), true);
+                }
+                state.markDirty();
             } else {
-                player.sendMessage(Text.literal("Поборник отказался торговаться."), true);
+                player.sendMessage(Text.literal("Вы уже торговались за этот предмет у этого поборника."), true);
             }
-            state.markDirty();
         } else if ("request".equals(action)) {
             data.orderItem = itemId;
             data.orderDueDay = world.getTime() / 24000L + 5 + world.getRandom().nextInt(16);
