@@ -12,6 +12,9 @@ import ru.pillagertrade.OrderTableScreenHandler;
 import ru.pillagertrade.PillagerTradeMod;
 
 public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
+    private boolean summonTab = false;
+    private final java.util.List<ButtonWidget> traderButtons = new java.util.ArrayList<>();
+    private ButtonWidget summonButton;
     public OrderTableScreen(OrderTableScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         this.backgroundWidth = 330;
@@ -23,26 +26,39 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
     @Override
     protected void init() {
         super.init();
+        traderButtons.clear();
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
-        addDrawableChild(ButtonWidget.builder(Text.literal("Призвать разбойников • 24 изумруда"), button -> {
-            PacketByteBuf buf = PacketByteBufs.create();
-            buf.writeBlockPos(handler.getTable().getPos());
-            ClientPlayNetworking.send(new net.minecraft.util.Identifier(PillagerTradeMod.MOD_ID, "summon_order"), buf);
-        }).dimensions(x + 174, y + 148, 148, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Доставка"), b -> setTab(false))
+                .dimensions(x + 174, y + 10, 72, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Призыв"), b -> setTab(true))
+                .dimensions(x + 250, y + 10, 72, 20).build());
         int shown = Math.min(5, handler.getTraders().size());
         for (int i = 0; i < shown; i++) {
             final int index = i;
             OrderTableScreenHandler.TraderOption trader = handler.getTraders().get(i);
-            addDrawableChild(ButtonWidget.builder(
-                    Text.literal(trader.name() + " | реп. " + trader.reputation()),
-                    button -> {
+            ButtonWidget button = ButtonWidget.builder(
+                    Text.literal(trader.name() + " | реп. " + trader.reputation() + " | ур. " + trader.strength()),
+                    b -> {
                         PacketByteBuf buf = PacketByteBufs.create();
                         buf.writeBlockPos(handler.getTable().getPos());
                         buf.writeVarInt(index);
                         ClientPlayNetworking.send(PillagerTradeMod.ORDER_START, buf);
-                    }).dimensions(x + 174, y + 34 + i * 22, 148, 20).build());
+                    }).dimensions(x + 174, y + 34 + i * 22, 148, 20).build();
+            traderButtons.add(addDrawableChild(button));
         }
+        summonButton = addDrawableChild(ButtonWidget.builder(Text.literal("Заказать подкрепление • 24 изумруда"), button -> {
+            PacketByteBuf buf = PacketByteBufs.create();
+            buf.writeBlockPos(handler.getTable().getPos());
+            ClientPlayNetworking.send(new net.minecraft.util.Identifier(PillagerTradeMod.MOD_ID, "summon_order"), buf);
+        }).dimensions(x + 174, y + 54, 148, 22).build());
+        setTab(summonTab);
+    }
+
+    private void setTab(boolean summon) {
+        summonTab = summon;
+        for (ButtonWidget button : traderButtons) button.visible = !summon;
+        if (summonButton != null) summonButton.visible = summon;
     }
 
     @Override
@@ -59,8 +75,9 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
         context.drawBorder(x + 111, y + 12, 58, 58, 0xFF777777);
         context.drawText(textRenderer, "Образец", x + 24, y + 20, 0xFF404040, false);
         context.drawText(textRenderer, "Добыча", x + 142, y + 5, 0xFF404040, false);
-        context.drawText(textRenderer, "Поборники поблизости:", x + 174, y + 18, 0xFF404040, false);
-        if (handler.getTraders().isEmpty()) {
+        if (!summonTab) context.drawText(textRenderer, "Выберите торговца для доставки:", x + 174, y + 18, 0xFF404040, false);
+        else context.drawText(textRenderer, "Подкрепление из 1–3 разбойников:", x + 174, y + 34, 0xFF404040, false);
+        if (!summonTab && handler.getTraders().isEmpty()) {
             context.drawText(textRenderer, "Нет поборников в радиусе 16 блоков", x + 174, y + 38, 0xFFAA3333, false);
         }
         if (handler.getTable().hasActiveOrder()) {
