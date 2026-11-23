@@ -145,6 +145,19 @@ public class PillagerTradeScreen extends Screen {
                     left + 140, top + 257, 0xFF70D080, false);
         }
         super.render(context, mouseX, mouseY, delta);
+        drawDarkButton(context, left + 12, top + 8, 88, 20, "Торговля", mouseX, mouseY);
+        drawDarkButton(context, left + 104, top + 8, 88, 20, "Задания", mouseX, mouseY);
+        drawDarkButton(context, left + 240, top + 272, 108, 20, "Закрыть", mouseX, mouseY);
+        if (questsTab) {
+            drawDarkButton(context, left + 12, top + 220, 150, 22,
+                    activeQuest ? "Сдать предметы" : "Принять задание", mouseX, mouseY);
+        } else {
+            for (int i = 0; i < Math.min(8, stock.size()); i++)
+                drawDarkButton(context, left + 12, top + 74 + i * 19, 280, 18, stock.get(i).name, mouseX, mouseY);
+            drawDarkButton(context, left + 12, top + 250, 120, 20, "Торг: +10% скидки", mouseX, mouseY);
+            drawDarkButton(context, left + 12, top + 272, 100, 20, "Купить", mouseX, mouseY);
+            drawDarkButton(context, left + 120, top + 272, 112, 20, "Нанять: 1 день", mouseX, mouseY);
+        }
         if (!questsTab) {
             context.drawItem(new ItemStack(Items.EMERALD), left + 268, top + 8);
             context.drawText(textRenderer, String.valueOf(emeraldBalance), left + 288, top + 13, 0xFF70D080, false);
@@ -154,6 +167,14 @@ public class PillagerTradeScreen extends Screen {
                 context.drawText(textRenderer, String.valueOf(stock.get(i).price), left + 320, rowY + 5, 0xFF70D080, false);
             }
         }
+    }
+
+    private void drawDarkButton(DrawContext context, int x, int y, int w, int h, String label, int mouseX, int mouseY) {
+        boolean hovered = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
+        context.fill(x, y, x + w, y + h, hovered ? 0xFF555555 : 0xFF3A3A3A);
+        context.drawBorder(x, y, w, h, 0xFF777777);
+        int textX = x + (w - textRenderer.getWidth(label)) / 2;
+        context.drawText(textRenderer, label, textX, y + (h - 8) / 2, 0xFFFFFFFF, false);
     }
 
     public void setEmeraldBalance(int emeraldBalance) {
