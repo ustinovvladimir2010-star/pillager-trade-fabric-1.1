@@ -1,6 +1,7 @@
 package ru.pillagertrade;
 
 import net.minecraft.entity.mob.PillagerEntity;
+import net.minecraft.entity.mob.IllagerEntity;
 import net.minecraft.item.SpawnEggItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.BlockItem;
@@ -26,7 +27,7 @@ public class TradeState extends PersistentState {
         return world.getPersistentStateManager().getOrCreate(TradeState::fromNbt, TradeState::new, "pillager_trade_state");
     }
 
-    public TraderData getOrCreate(PillagerEntity entity) {
+    public TraderData getOrCreate(IllagerEntity entity) {
         return traders.computeIfAbsent(entity.getUuid(), id -> {
             TraderData data = new TraderData();
             data.specialization = entity.getRandom().nextInt(7);
