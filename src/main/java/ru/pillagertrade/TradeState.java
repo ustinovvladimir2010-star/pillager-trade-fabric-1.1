@@ -59,6 +59,16 @@ public class TradeState extends PersistentState {
         public String itemId = "";
         public int amount;
         public int reward;
+        public int progress;
+    }
+
+    public void recordQuestKill(UUID playerId, String entityId) {
+        QuestData quest = activeQuests.get(playerId);
+        if (quest == null || !quest.itemId.startsWith("kill:")) return;
+        if (quest.itemId.substring(5).equals(entityId) && quest.progress < quest.amount) {
+            quest.progress++;
+            markDirty();
+        }
     }
 
     public long getBaronArrivalTime() { return baronArrivalTime; }
@@ -428,6 +438,7 @@ public class TradeState extends PersistentState {
             tag.putString("item", entry.getValue().itemId);
             tag.putInt("amount", entry.getValue().amount);
             tag.putInt("reward", entry.getValue().reward);
+            tag.putInt("progress", entry.getValue().progress);
             quests.add(tag);
         }
         nbt.put("activeQuests", quests);
@@ -452,6 +463,7 @@ public class TradeState extends PersistentState {
             quest.itemId = tag.getString("item");
             quest.amount = tag.getInt("amount");
             quest.reward = tag.getInt("reward");
+            quest.progress = tag.getInt("progress");
             state.activeQuests.put(tag.getUuid("player"), quest);
         }
         NbtList list = nbt.getList("traders", 10);
