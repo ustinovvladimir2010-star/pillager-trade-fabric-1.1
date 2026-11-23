@@ -1,0 +1,1 @@
+{"parent":"minecraft:block/cube","textures":{"particle":"pillager_trade:block/order_table_side","up":"pillager_trade:block/order_table_top","down":"pillager_trade:block/order_table_bottom","north":"pillager_trade:block/order_table_side","south":"pillager_trade:block/order_table_side","east":"pillager_trade:block/order_table_side","west":"pillager_trade:block/order_table_side"}}
