@@ -82,7 +82,10 @@ public class PillagerTradeScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(Text.translatable("screen.pillager_trade.close"), b -> close())
                 .dimensions(left + 240, top + 272, 108, 20).build());
         questActionButton = addDrawableChild(ButtonWidget.builder(Text.literal(activeQuest ? "Сдать предметы" : "Принять задание"),
-                b -> send(activeQuest ? "quest_complete" : "quest_accept", questItemId, questAmount, questReward))
+                b -> {
+                    send(activeQuest ? "quest_complete" : "quest_accept", questItemId, questAmount, questReward);
+                    close();
+                })
                 .dimensions(left + 12, top + 220, 150, 22).build());
         setTab(false);
     }
