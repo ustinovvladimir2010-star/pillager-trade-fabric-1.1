@@ -114,30 +114,45 @@ public class PillagerTradeScreen extends Screen {
         renderBackground(context);
         int left = (width - 360) / 2;
         int top = (height - 300) / 2;
-        context.fill(left, top, left + 360, top + 300, 0xFFC6C6C6);
-        context.drawBorder(left, top, 360, 300, 0xFF555555);
-        context.drawText(textRenderer, traderName, left + 12, top + 10, 0xFFFFFF, false);
-        context.drawText(textRenderer, "Репутация: " + reputation + " | День мира: " + day,
-                left + 12, top + 26, 0xFF404040, false);
-        context.drawText(textRenderer, "Этап торговли: " + stage + " / 5",
-                left + 12, top + 42, 0xFF5A4A2A, false);
-        String progress = stage >= 5 ? "Достигнут максимальный этап"
-                : "Для этапа " + (stage + 1) + ": день " + nextStageDay
-                + " и репутация " + nextStageReputation;
-        context.drawText(textRenderer, progress, left + 12, top + 57, 0xFF555555, false);
-        context.drawText(textRenderer, "Специализация: " + specializationName(specialization),
-                left + 12, top + 237, 0xFF5A4A2A, false);
-        if (hired) {
-            context.drawText(textRenderer, "Этот поборник уже нанят",
-                    left + 140, top + 257, 0xFF267A26, false);
+        context.fill(left, top, left + 360, top + 300, 0xFF242424);
+        context.drawBorder(left, top, 360, 300, 0xFF111111);
+        context.drawText(textRenderer, traderName, left + 204, top + 13, 0xFFFFFFFF, false);
+        if (questsTab) {
+            context.drawText(textRenderer, "ЗАДАНИЯ ТОРГОВЦА", left + 12, top + 48, 0xFFE0C080, false);
+            if (activeQuest) {
+                context.drawText(textRenderer, "Активное задание: найдите предметы", left + 12, top + 80, 0xFFE0E0E0, false);
+                context.drawText(textRenderer, questAmount + " x " + questItemName, left + 12, top + 104, 0xFFFFFFFF, false);
+                context.drawText(textRenderer, "Награда: " + questReward + " изумрудов", left + 12, top + 128, 0xFF70D080, false);
+                context.drawText(textRenderer, "Другие задания откроются после сдачи.", left + 12, top + 158, 0xFFB0B0B0, false);
+            } else {
+                context.drawText(textRenderer, "Поиск предметов:", left + 12, top + 80, 0xFFE0E0E0, false);
+                context.drawText(textRenderer, questAmount + " x " + questItemName, left + 12, top + 104, 0xFFFFFFFF, false);
+                context.drawText(textRenderer, "Награда: " + questReward + " изумрудов", left + 12, top + 128, 0xFF70D080, false);
+                context.drawText(textRenderer, "Одновременно можно выполнять только одно задание.", left + 12, top + 158, 0xFFB0B0B0, false);
+            }
+        } else {
+            context.drawText(textRenderer, "Репутация: " + reputation + " | День мира: " + day,
+                    left + 12, top + 26, 0xFFE0E0E0, false);
+            context.drawText(textRenderer, "Этап торговли: " + stage + " / 5",
+                    left + 12, top + 42, 0xFFC5A66A, false);
+            String progress = stage >= 5 ? "Достигнут максимальный этап"
+                    : "Для этапа " + (stage + 1) + ": день " + nextStageDay
+                    + " и репутация " + nextStageReputation;
+            context.drawText(textRenderer, progress, left + 12, top + 57, 0xFFB0B0B0, false);
+            context.drawText(textRenderer, "Специализация: " + specializationName(specialization),
+                    left + 12, top + 237, 0xFFC5A66A, false);
+            if (hired) context.drawText(textRenderer, "Этот поборник уже нанят",
+                    left + 140, top + 257, 0xFF70D080, false);
         }
         super.render(context, mouseX, mouseY, delta);
-        context.drawItem(new ItemStack(Items.EMERALD), left + 268, top + 8);
-        context.drawText(textRenderer, String.valueOf(emeraldBalance), left + 288, top + 13, 0xFF267A26, false);
-        for (int i = 0; i < Math.min(8, stock.size()); i++) {
-            int rowY = top + 74 + i * 19;
-            context.drawItem(new ItemStack(Items.EMERALD), left + 300, rowY + 1);
-            context.drawText(textRenderer, String.valueOf(stock.get(i).price), left + 320, rowY + 5, 0xFF267A26, false);
+        if (!questsTab) {
+            context.drawItem(new ItemStack(Items.EMERALD), left + 268, top + 8);
+            context.drawText(textRenderer, String.valueOf(emeraldBalance), left + 288, top + 13, 0xFF70D080, false);
+            for (int i = 0; i < Math.min(8, stock.size()); i++) {
+                int rowY = top + 74 + i * 19;
+                context.drawItem(new ItemStack(Items.EMERALD), left + 300, rowY + 1);
+                context.drawText(textRenderer, String.valueOf(stock.get(i).price), left + 320, rowY + 5, 0xFF70D080, false);
+            }
         }
     }
 
