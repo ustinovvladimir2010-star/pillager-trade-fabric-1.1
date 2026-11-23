@@ -276,7 +276,10 @@ public class PillagerTradeMod implements ModInitializer {
             Item questItem;
             try { questItem = Registries.ITEM.getOrEmpty(new Identifier(itemId)).orElse(Items.AIR); }
             catch (IllegalArgumentException exception) { return; }
-            if (questItem == Items.AIR || !state.acceptQuest(player.getUuid(), itemId, amount, offer)) {
+            long currentDay = world.getTime() / 24000L;
+            int currentStage = TradeState.getStage(currentDay, data.reputation);
+            boolean questWasOffered = state.getStock(data, currentStage).contains(questItem);
+            if (questItem == Items.AIR || !questWasOffered || !state.acceptQuest(player.getUuid(), itemId, amount, offer)) {
                 player.sendMessage(Text.literal("У вас уже есть активное задание или предмет недоступен."), true);
             } else {
                 player.sendMessage(Text.literal("Задание принято: найдите " + amount + " × " + displayItemName(questItem)
@@ -369,7 +372,7 @@ public class PillagerTradeMod implements ModInitializer {
             double chance = MathHelper.clamp(0.65 - Math.max(0, base - offer) * 0.025 + data.reputation * 0.002, 0.05, 0.9);
             double roll = world.getRandom().nextDouble();
             if (roll < chance) {
-                data.tradeDiscount = Math.min(5, data.tradeDiscount + 2);
+                data.tradeDiscount = Math.min(50, data.tradeDiscount + 10);
                 data.reputation = Math.min(100, data.reputation + 1);
                 player.sendMessage(Text.literal("Торг удался! Постоянная скидка на покупки: " + data.tradeDiscount + "%."), true);
             } else if (roll < chance + 0.20) {
