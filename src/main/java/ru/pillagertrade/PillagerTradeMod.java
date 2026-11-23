@@ -336,7 +336,8 @@ public class PillagerTradeMod implements ModInitializer {
 
         if ("quest_accept".equals(action)) {
             Item questItem;
-            try { questItem = Registries.ITEM.getOrEmpty(new Identifier(itemId)).orElse(Items.AIR); }
+            try { questItem = itemId.startsWith("kill:") ? Items.AIR
+                    : Registries.ITEM.getOrEmpty(new Identifier(itemId)).orElse(Items.AIR); }
             catch (IllegalArgumentException exception) { return; }
             long currentDay = world.getTime() / 24000L;
             int currentStage = TradeState.getStage(currentDay, data.reputation);
@@ -344,7 +345,7 @@ public class PillagerTradeMod implements ModInitializer {
                     || itemId.startsWith("kill:minecraft:villager")
                     || itemId.startsWith("kill:minecraft:zombie");
             boolean questWasOffered = huntQuest || state.getStock(data, currentStage).contains(questItem);
-            int questAmount = Math.max(1, Math.min(4, Math.min(64, amount)));
+            int questAmount = Math.max(1, Math.min(huntQuest ? 64 : 4, Math.min(64, amount)));
             int questReward = huntQuest ? Math.max(1, offer) : Math.max(1, TradeState.priceFor(questItem, data, false) * questAmount / 2);
             if ((!huntQuest && questItem == Items.AIR) || !questWasOffered
                     || !state.acceptQuest(player.getUuid(), itemId, questAmount, questReward)) {
