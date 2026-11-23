@@ -24,6 +24,7 @@ public class TradeState extends PersistentState {
 
     private final Map<UUID, TraderData> traders = new HashMap<>();
     private final Set<UUID> marketInfluencePlayers = new HashSet<>();
+    private final Map<UUID, QuestData> activeQuests = new HashMap<>();
     private long baronArrivalTime = 0L;
     private UUID baronEntityId;
     private boolean baronDefeated = false;
@@ -34,6 +35,30 @@ public class TradeState extends PersistentState {
 
     public void grantMarketInfluence(UUID playerId) {
         if (marketInfluencePlayers.add(playerId)) markDirty();
+    }
+
+    public QuestData getQuest(UUID playerId) { return activeQuests.get(playerId); }
+
+    public boolean acceptQuest(UUID playerId, String itemId, int amount, int reward) {
+        if (activeQuests.containsKey(playerId)) return false;
+        QuestData quest = new QuestData();
+        quest.itemId = itemId;
+        quest.amount = Math.max(1, Math.min(64, amount));
+        quest.reward = Math.max(1, reward);
+        activeQuests.put(playerId, quest);
+        markDirty();
+        return true;
+    }
+
+    public void finishQuest(UUID playerId) {
+        activeQuests.remove(playerId);
+        markDirty();
+    }
+
+    public static class QuestData {
+        public String itemId = "";
+        public int amount;
+        public int reward;
     }
 
     public long getBaronArrivalTime() { return baronArrivalTime; }
@@ -381,6 +406,16 @@ public class TradeState extends PersistentState {
         nbt.putLong("baronArrivalTime", baronArrivalTime);
         if (baronEntityId != null) nbt.putUuid("baronEntityId", baronEntityId);
         nbt.putBoolean("baronDefeated", baronDefeated);
+        NbtList quests = new NbtList();
+        for (Map.Entry<UUID, QuestData> entry : activeQuests.entrySet()) {
+            NbtCompound tag = new NbtCompound();
+            tag.putUuid("player", entry.getKey());
+            tag.putString("item", entry.getValue().itemId);
+            tag.putInt("amount", entry.getValue().amount);
+            tag.putInt("reward", entry.getValue().reward);
+            quests.add(tag);
+        }
+        nbt.put("activeQuests", quests);
         return nbt;
     }
 
@@ -394,6 +429,16 @@ public class TradeState extends PersistentState {
         state.baronArrivalTime = nbt.getLong("baronArrivalTime");
         if (nbt.containsUuid("baronEntityId")) state.baronEntityId = nbt.getUuid("baronEntityId");
         state.baronDefeated = nbt.getBoolean("baronDefeated");
+        NbtList quests = nbt.getList("activeQuests", 10);
+        for (int i = 0; i < quests.size(); i++) {
+            NbtCompound tag = quests.getCompound(i);
+            if (!tag.containsUuid("player")) continue;
+            QuestData quest = new QuestData();
+            quest.itemId = tag.getString("item");
+            quest.amount = tag.getInt("amount");
+            quest.reward = tag.getInt("reward");
+            state.activeQuests.put(tag.getUuid("player"), quest);
+        }
         NbtList list = nbt.getList("traders", 10);
         for (int i = 0; i < list.size(); i++) {
             NbtCompound tag = list.getCompound(i);
