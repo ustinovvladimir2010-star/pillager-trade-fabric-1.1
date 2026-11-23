@@ -296,6 +296,12 @@ public class TradeState extends PersistentState {
         return Math.max(2, base);
     }
 
+    public static int orderPriceFor(Item item, TraderData data, boolean marketInfluence) {
+        int base = orderPriceFor(item);
+        int totalDiscount = Math.min(60, data.tradeDiscount + (marketInfluence ? 10 : 0));
+        return Math.max(1, (int) Math.ceil(base * (100 - totalDiscount) / 100.0));
+    }
+
     public static int priceFor(Item item, TraderData data) {
         return priceFor(item, data, false);
     }
