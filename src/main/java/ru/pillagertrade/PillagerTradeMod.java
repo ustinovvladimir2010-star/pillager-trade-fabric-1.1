@@ -91,7 +91,12 @@ public class PillagerTradeMod implements ModInitializer {
             if (!(entity instanceof PillagerEntity) && !(entity instanceof VindicatorEntity)) return ActionResult.PASS;
             if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
             IllagerEntity pillager = (IllagerEntity) entity;
-            if (player.isSneaking()) return ActionResult.PASS;
+            if (player.isSneaking()) {
+                if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
+                    toggleGuardFollow(serverPlayer, pillager);
+                }
+                return ActionResult.SUCCESS;
+            }
             if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
                 openTrader(serverPlayer, pillager);
             }
@@ -216,6 +221,51 @@ public class PillagerTradeMod implements ModInitializer {
      * Keeps hired pillagers assigned to their owner and makes them defend the owner
      * against nearby hostile mobs. All decisions are server-side.
      */
+    private static void toggleGuardFollow(ServerPlayerEntity player, IllagerEntity guard) {
+        TradeState state = TradeState.get(player.getServerWorld());
+        TradeState.TraderData data = state.get(guard.getUuid());
+        if (data == null || !data.hired || data.hireUntil <= player.getServerWorld().getTime()) {
+            player.sendMessage(Text.literal("Сначала наймите этого поборника."), true);
+            return;
+        }
+        if (data.hireOwner == null || !data.hireOwner.equals(player.getUuid())) {
+            player.sendMessage(Text.literal("Вы не можете отдавать приказы чужому охраннику."), true);
+            return;
+        }
+        data.staying = !data.staying;
+        state.markDirty();
+        guard.getNavigation().stop();
+        player.sendMessage(Text.literal(data.staying
+                ? "Поборник остаётся на месте."
+                : "Поборник следует за вами."), true);
+    }
+
+    private static boolean teleportGuardNearOwner(ServerWorld world, IllagerEntity guard, ServerPlayerEntity owner) {
+        for (int radius = 1; radius <= 3; radius++) {
+            for (int yOffset = 0; yOffset <= 2; yOffset++) {
+                for (int x = -radius; x <= radius; x++) {
+                    for (int z = -radius; z <= radius; z++) {
+                        if (Math.max(Math.abs(x), Math.abs(z)) != radius) continue;
+                        double px = Math.floor(owner.getX()) + x + 0.5;
+                        double py = Math.floor(owner.getY()) + yOffset;
+                        double pz = Math.floor(owner.getZ()) + z + 0.5;
+                        net.minecraft.util.math.Box candidate = guard.getBoundingBox()
+                                .offset(px - guard.getX(), py - guard.getY(), pz - guard.getZ());
+                        net.minecraft.util.math.BlockPos feet = new net.minecraft.util.math.BlockPos(
+                                (int) Math.floor(px), (int) Math.floor(py), (int) Math.floor(pz));
+                        if (world.isSpaceEmpty(guard, candidate)
+                                && world.getBlockState(feet).getFluidState().isEmpty()) {
+                            guard.requestTeleport(px, py, pz);
+                            guard.getNavigation().stop();
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     private static void tickHiredGuards(ServerWorld world) {
         TradeState state = TradeState.get(world);
         boolean changed = false;
@@ -250,6 +300,10 @@ public class PillagerTradeMod implements ModInitializer {
                 continue;
             }
 
+            if (!data.staying && guard.squaredDistanceTo(owner) > 48.0 * 48.0) {
+                if (teleportGuardNearOwner(world, guard, owner)) continue;
+            }
+
             // Search around both the owner and the guard so a guard can intercept
             // threats approaching from either direction.
             Box searchArea = owner.getBoundingBox().expand(14.0).union(guard.getBoundingBox().expand(10.0));
@@ -278,6 +332,11 @@ public class PillagerTradeMod implements ModInitializer {
                 continue;
             }
 
+            if (data.staying) {
+                if (guard.getNavigation().isFollowingPath()) guard.getNavigation().stop();
+                continue;
+            }
+
             LivingEntity currentTarget = guard.getTarget();
             if (currentTarget instanceof HostileEntity hostile
                     && hostile.isAlive() && !(hostile instanceof IllagerEntity)) {
@@ -291,6 +350,9 @@ public class PillagerTradeMod implements ModInitializer {
                 // Re-path periodically instead of resetting navigation every tick.
                 if (world.getTime() % 10L == 0L) {
                     guard.getNavigation().startMovingTo(owner, guard instanceof VindicatorEntity ? 1.12 : 1.08);
+                }
+                if (guard.isOnGround() && guard.horizontalCollision) {
+                    guard.getJumpControl().setActive();
                 }
             } else if (distanceToOwner < 12.25 && guard.getNavigation().isFollowingPath()) {
                 guard.getNavigation().stop();
