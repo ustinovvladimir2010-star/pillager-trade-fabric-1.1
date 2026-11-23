@@ -306,11 +306,14 @@ public class PillagerTradeMod implements ModInitializer {
             long currentDay = world.getTime() / 24000L;
             int currentStage = TradeState.getStage(currentDay, data.reputation);
             boolean questWasOffered = state.getStock(data, currentStage).contains(questItem);
-            if (questItem == Items.AIR || !questWasOffered || !state.acceptQuest(player.getUuid(), itemId, amount, offer)) {
+            int questAmount = Math.max(1, Math.min(4, Math.min(64, amount)));
+            int questReward = Math.max(4, TradeState.orderPriceFor(questItem) * questAmount * 2);
+            if (questItem == Items.AIR || !questWasOffered
+                    || !state.acceptQuest(player.getUuid(), itemId, questAmount, questReward)) {
                 player.sendMessage(Text.literal("У вас уже есть активное задание или предмет недоступен."), true);
             } else {
-                player.sendMessage(Text.literal("Задание принято: найдите " + amount + " × " + displayItemName(questItem)
-                        + ". Награда: " + offer + " изумрудов."), false);
+                player.sendMessage(Text.literal("Задание принято: найдите " + questAmount + " × " + displayItemName(questItem)
+                        + ". Награда: " + questReward + " изумрудов."), false);
             }
             return;
         } else if ("quest_complete".equals(action)) {
