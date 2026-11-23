@@ -288,7 +288,7 @@ public class TradeState extends PersistentState {
             base = 8;
         }
 
-        return Math.max(1, base - data.reputation / 25 + data.strength);
+        return Math.max(1, base - data.reputation / 25 + data.strength - data.tradeDiscount);
     }
 
     @Override
@@ -301,6 +301,7 @@ public class TradeState extends PersistentState {
             tag.putInt("reputation", d.reputation);
             tag.putInt("specialization", d.specialization);
             tag.putInt("strength", d.strength);
+            tag.putInt("tradeDiscount", d.tradeDiscount);
             tag.putLong("createdDay", d.createdDay);
             tag.putLong("seed", d.seed);
             tag.putBoolean("hired", d.hired);
@@ -340,6 +341,7 @@ public class TradeState extends PersistentState {
             d.reputation = tag.getInt("reputation");
             d.specialization = tag.getInt("specialization");
             d.strength = tag.getInt("strength");
+            d.tradeDiscount = tag.getInt("tradeDiscount");
             d.createdDay = tag.getLong("createdDay");
             d.seed = tag.contains("seed") ? tag.getLong("seed") : tag.getUuid("id").getMostSignificantBits();
             d.hired = tag.getBoolean("hired");
@@ -373,6 +375,7 @@ public class TradeState extends PersistentState {
         public int reputation = 0;
         public int specialization = 0;
         public int strength = 1;
+        public int tradeDiscount = 0;
         public long createdDay = 0;
         public long seed = new Random().nextLong();
         public boolean hired = false;
