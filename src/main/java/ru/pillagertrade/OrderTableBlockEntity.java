@@ -155,8 +155,8 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
             } else if (raider instanceof VindicatorEntity vindicator) {
                 vindicator.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE));
             }
-            raider.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).ifPresent(a -> a.setBaseValue(24.0 + level * 4.0));
-            raider.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE).ifPresent(a -> a.setBaseValue(4.0 + level * 1.25));
+            if (raider.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH) != null) raider.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(24.0 + level * 4.0);
+            if (raider.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE) != null) raider.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(4.0 + level * 1.25);
             raider.setHealth((float) (24.0 + level * 4.0));
             raider.setCustomName(Text.literal("Разбойник • ур. " + level));
             raider.setCustomNameVisible(true);
@@ -172,7 +172,9 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
     }
 
     public void tick() {
-        if (!(world instanceof ServerWorld serverWorld) || !active || serverWorld.getTime() < dueTime) return;
+        if (!(world instanceof ServerWorld serverWorld) || !active) return;
+        if (serverWorld.getTime() % 20L == 0L) world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+        if (serverWorld.getTime() < dueTime) return;
         active = false;
         TradeState state = TradeState.get(serverWorld);
         TradeState.TraderData data = state.get(trader);
