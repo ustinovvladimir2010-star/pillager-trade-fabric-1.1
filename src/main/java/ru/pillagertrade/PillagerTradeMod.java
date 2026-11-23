@@ -346,7 +346,9 @@ public class PillagerTradeMod implements ModInitializer {
                     || itemId.startsWith("kill:minecraft:zombie");
             boolean questWasOffered = huntQuest || state.getStock(data, currentStage).contains(questItem);
             int questAmount = Math.max(1, Math.min(huntQuest ? 64 : 4, Math.min(64, amount)));
-            int questReward = huntQuest ? Math.max(1, offer) : Math.max(1, TradeState.priceFor(questItem, data, false) * questAmount / 2);
+            int questReward = huntQuest
+                    ? (itemId.endsWith("iron_golem") ? 18 : itemId.endsWith("villager") ? 22 : 14)
+                    : Math.max(1, TradeState.priceFor(questItem, data, false) * questAmount / 2);
             if ((!huntQuest && questItem == Items.AIR) || !questWasOffered
                     || !state.acceptQuest(player.getUuid(), itemId, questAmount, questReward)) {
                 player.sendMessage(Text.literal("У вас уже есть активное задание или предмет недоступен."), true);
