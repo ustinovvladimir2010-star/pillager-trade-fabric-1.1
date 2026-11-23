@@ -55,10 +55,10 @@ public class OrderTableBlockEntity extends BlockEntity implements ExtendedScreen
     public long getStartTime() { return startTime; }
     public long getDueTime() { return dueTime; }
     public boolean isSummonOrder() { return summonOrder; }
-    public int getProgress(ServerWorld world) {
+    public int getProgress(long worldTime) {
         if (!active) return ready ? 100 : 0;
         long duration = Math.max(1L, dueTime - startTime);
-        return (int) Math.max(0, Math.min(100, (world.getTime() - startTime) * 100 / duration));
+        return (int) Math.max(0, Math.min(100, (worldTime - startTime) * 100 / duration));
     }
 
     public boolean startOrder(ServerPlayerEntity player, UUID traderId) {
