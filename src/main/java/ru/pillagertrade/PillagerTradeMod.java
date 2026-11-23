@@ -142,6 +142,13 @@ public class PillagerTradeMod implements ModInitializer {
             }
         });
 
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
+            if (!(entity.getWorld() instanceof ServerWorld world)) return;
+            LivingEntity attacker = entity.getAttacker();
+            if (!(attacker instanceof ServerPlayerEntity player)) return;
+            TradeState.get(world).recordQuestKill(player.getUuid(), Registries.ENTITY_TYPE.getId(entity.getType()).toString());
+        });
+
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             ServerWorld serverWorld = (ServerWorld) world;
             tickHiredGuards(serverWorld);
@@ -249,8 +256,16 @@ public class PillagerTradeMod implements ModInitializer {
             out.writeString("Нет доступных заданий");
             out.writeInt(0);
             out.writeInt(0);
+            out.writeInt(0);
         }
         ServerPlayNetworking.send(player, OPEN_SCREEN, out);
+    }
+
+    private static String questDescription(String id, int amount) {
+        if (id.endsWith("iron_golem")) return "Убейте " + amount + " железных големов";
+        if (id.endsWith("villager")) return "Убейте " + amount + " жителей";
+        if (id.endsWith("zombie")) return "Убейте " + amount + " зомби";
+        return "Охотничье задание";
     }
 
     private static String displayItemName(Item item) {
@@ -324,14 +339,19 @@ public class PillagerTradeMod implements ModInitializer {
             catch (IllegalArgumentException exception) { return; }
             long currentDay = world.getTime() / 24000L;
             int currentStage = TradeState.getStage(currentDay, data.reputation);
-            boolean questWasOffered = state.getStock(data, currentStage).contains(questItem);
+            boolean huntQuest = itemId.startsWith("kill:minecraft:iron_golem")
+                    || itemId.startsWith("kill:minecraft:villager")
+                    || itemId.startsWith("kill:minecraft:zombie");
+            boolean questWasOffered = huntQuest || state.getStock(data, currentStage).contains(questItem);
             int questAmount = Math.max(1, Math.min(4, Math.min(64, amount)));
-            int questReward = Math.max(1, TradeState.priceFor(questItem, data, false) * questAmount / 2);
-            if (questItem == Items.AIR || !questWasOffered
+            int questReward = huntQuest ? Math.max(1, offer) : Math.max(1, TradeState.priceFor(questItem, data, false) * questAmount / 2);
+            if ((!huntQuest && questItem == Items.AIR) || !questWasOffered
                     || !state.acceptQuest(player.getUuid(), itemId, questAmount, questReward)) {
                 player.sendMessage(Text.literal("У вас уже есть активное задание или предмет недоступен."), true);
             } else {
-                player.sendMessage(Text.literal("Задание принято: найдите " + questAmount + " × " + displayItemName(questItem)
+                player.sendMessage(Text.literal(huntQuest ? "Задание на охоту принято. " + questDescription(itemId, questAmount)
+                        + ". Награда: " + questReward + " изумрудов."
+                        : "Задание принято: найдите " + questAmount + " × " + displayItemName(questItem)
                         + ". Награда: " + questReward + " изумрудов."), false);
             }
             return;
@@ -339,6 +359,18 @@ public class PillagerTradeMod implements ModInitializer {
             TradeState.QuestData quest = state.getQuest(player.getUuid());
             if (quest == null) {
                 player.sendMessage(Text.literal("У вас нет активного задания."), true);
+                return;
+            }
+            if (quest.itemId.startsWith("kill:")) {
+                if (quest.progress < quest.amount) {
+                    player.sendMessage(Text.literal("Цель ещё не выполнена: " + quest.progress + "/" + quest.amount + "."), true);
+                    return;
+                }
+                int huntReward = quest.reward;
+                state.finishQuest(player.getUuid());
+                giveItem(player, new ItemStack(Items.EMERALD, huntReward));
+                player.sendMessage(Text.literal("Охотничье задание выполнено! Получено " + huntReward + " изумрудов."), false);
+                syncEmeraldBalance(player);
                 return;
             }
             Item questItem;
