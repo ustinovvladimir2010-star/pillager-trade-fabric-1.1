@@ -209,10 +209,11 @@ public class PillagerTradeMod implements ModInitializer {
             double chance = MathHelper.clamp(0.65 - Math.max(0, base - offer) * 0.025 + data.reputation * 0.002, 0.05, 0.9);
             double roll = world.getRandom().nextDouble();
             if (roll < chance) {
+                data.tradeDiscount = Math.min(5, data.tradeDiscount + 2);
                 data.reputation = Math.min(100, data.reputation + 1);
-                player.sendMessage(Text.literal("Поборник согласился на предложенную цену!"), true);
+                player.sendMessage(Text.literal("Торг удался! Следующие покупки дешевле на " + data.tradeDiscount + " изумрума за предмет."), true);
             } else if (roll < chance + 0.20) {
-                player.sendMessage(Text.literal("Поборник возмутился и повысил цену!"), true);
+                player.sendMessage(Text.literal("Поборник возмутился. В этот раз торг не удался."), true);
             } else {
                 player.sendMessage(Text.literal("Поборник отказался торговаться."), true);
             }
