@@ -2,7 +2,7 @@ package ru.pillagertrade.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import ru.pillagertrade.PillagerTradeMod;
+import ru.pillagertrade.PillagerTradeMod;\nimport net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,11 +28,14 @@ public class PillagerTradeClient implements ClientModInitializer {
             int count = buf.readVarInt();
             List<PillagerTradeScreen.StockEntry> stock = new ArrayList<>();
             for (int i = 0; i < count; i++) {
-                stock.add(new PillagerTradeScreen.StockEntry(buf.readString(128), buf.readString(128), buf.readInt()));
+                String itemId = buf.readString(128);
+                String translationKey = buf.readString(256);
+                String localized = Text.translatable(translationKey).getString();
+                stock.add(new PillagerTradeScreen.StockEntry(itemId, localized, buf.readInt()));
             }
             boolean activeQuest = buf.readBoolean();
             String questItemId = buf.readString(128);
-            String questItemName = buf.readString(128);
+            String questTranslationKey = buf.readString(256);\n            String questItemName = Text.translatable(questTranslationKey).getString();
             int questAmount = buf.readInt();
             int questReward = buf.readInt();
             client.execute(() -> client.setScreen(new PillagerTradeScreen(trader, name, reputation, specialization, hired, day, stage, nextStageDay, nextStageReputation, emeraldBalance, stock, activeQuest, questItemId, questItemName, questAmount, questReward)));
