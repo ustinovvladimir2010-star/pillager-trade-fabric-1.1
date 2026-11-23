@@ -27,10 +27,19 @@ public class PillagerTradeScreen extends Screen {
     private final List<StockEntry> stock;
     private int selected = 0;
     private int emeraldBalance;
+    private boolean questsTab = false;
+    private final boolean activeQuest;
+    private final String questItemId;
+    private final String questItemName;
+    private final int questAmount;
+    private final int questReward;
+    private final List<ButtonWidget> tradeButtons = new java.util.ArrayList<>();
+    private ButtonWidget questActionButton;
 
     public PillagerTradeScreen(UUID trader, String name, int reputation, int specialization,
                                boolean hired, long day, int stage, int nextStageDay,
-                               int nextStageReputation, int emeraldBalance, List<StockEntry> stock) {
+                               int nextStageReputation, int emeraldBalance, List<StockEntry> stock,
+                               boolean activeQuest, String questItemId, String questItemName, int questAmount, int questReward) {
         super(Text.translatable("screen.pillager_trade.title"));
         this.trader = trader;
         this.traderName = name;
@@ -43,6 +52,11 @@ public class PillagerTradeScreen extends Screen {
         this.nextStageReputation = nextStageReputation;
         this.stock = stock;
         this.emeraldBalance = emeraldBalance;
+        this.activeQuest = activeQuest;
+        this.questItemId = questItemId;
+        this.questItemName = questItemName;
+        this.questAmount = questAmount;
+        this.questReward = questReward;
     }
 
     @Override
