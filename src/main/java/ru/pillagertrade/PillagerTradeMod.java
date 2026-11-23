@@ -12,6 +12,8 @@ import net.minecraft.entity.mob.IllagerEntity;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.util.math.Box;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -206,7 +208,7 @@ public class PillagerTradeMod implements ModInitializer {
             Identifier id = Registries.ITEM.getId(item);
             out.writeString(id.toString());
             out.writeString(item.getName().getString());
-            out.writeInt(TradeState.priceFor(item, data));
+            out.writeInt(TradeState.priceFor(item, data, state.hasMarketInfluence(player.getUuid())));
         }
         ServerPlayNetworking.send(player, OPEN_SCREEN, out);
     }
@@ -238,7 +240,7 @@ public class PillagerTradeMod implements ModInitializer {
             }
             if (item == Items.AIR || !offeredByTrader) return;
             amount = MathHelper.clamp(amount, 1, Math.min(64, item.getMaxCount()));
-            int price = TradeState.priceFor(item, data) * amount;
+            int price = TradeState.priceFor(item, data, state.hasMarketInfluence(player.getUuid())) * amount;
             if (!removeEmeralds(player, price)) {
                 player.sendMessage(Text.translatable("message.pillager_trade.not_enough"), true);
                 syncEmeraldBalance(player);
@@ -274,7 +276,7 @@ public class PillagerTradeMod implements ModInitializer {
             if (roll < chance) {
                 data.tradeDiscount = Math.min(5, data.tradeDiscount + 2);
                 data.reputation = Math.min(100, data.reputation + 1);
-                player.sendMessage(Text.literal("Торг удался! Следующие покупки дешевле на " + data.tradeDiscount + " изумрума за предмет."), true);
+                player.sendMessage(Text.literal("Торг удался! Постоянная скидка на покупки: " + data.tradeDiscount + "%."), true);
             } else if (roll < chance + 0.20) {
                 player.sendMessage(Text.literal("Поборник возмутился. В этот раз торг не удался."), true);
             } else {
