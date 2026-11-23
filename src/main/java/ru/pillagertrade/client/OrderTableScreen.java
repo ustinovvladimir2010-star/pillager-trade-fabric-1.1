@@ -61,6 +61,14 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
         if (summonButton != null) summonButton.visible = summon;
     }
 
+    private void drawDarkButton(DrawContext context, int x, int y, int w, int h, String label, int mouseX, int mouseY) {
+        boolean hovered = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
+        context.fill(x, y, x + w, y + h, hovered ? 0xFF555555 : 0xFF3A3A3A);
+        context.drawBorder(x, y, w, h, 0xFF777777);
+        int textX = x + (w - textRenderer.getWidth(label)) / 2;
+        context.drawText(textRenderer, label, textX, y + (h - 8) / 2, 0xFFFFFFFF, false);
+    }
+
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         int x = (width - backgroundWidth) / 2;
@@ -105,6 +113,15 @@ public class OrderTableScreen extends HandledScreen<OrderTableScreenHandler> {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
+        drawDarkButton(context, (width - backgroundWidth) / 2 + 174, (height - backgroundHeight) / 2 + 10, 72, 20, "Доставка", mouseX, mouseY);
+        drawDarkButton(context, (width - backgroundWidth) / 2 + 250, (height - backgroundHeight) / 2 + 10, 72, 20, "Призыв", mouseX, mouseY);
+        int bx = (width - backgroundWidth) / 2 + 174;
+        int by = (height - backgroundHeight) / 2;
+        if (summonTab) drawDarkButton(context, bx, by + 54, 148, 22, "Заказать подкрепление", mouseX, mouseY);
+        else for (int i = 0; i < Math.min(5, handler.getTraders().size()); i++) {
+            OrderTableScreenHandler.TraderOption trader = handler.getTraders().get(i);
+            drawDarkButton(context, bx, by + 34 + i * 22, 148, 20, trader.name() + " | ур. " + trader.strength(), mouseX, mouseY);
+        }
         drawMouseoverTooltip(context, mouseX, mouseY);
     }
 }
