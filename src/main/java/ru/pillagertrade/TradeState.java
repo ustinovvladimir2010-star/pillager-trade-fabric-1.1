@@ -297,6 +297,10 @@ public class TradeState extends PersistentState {
     }
 
     public static int priceFor(Item item, TraderData data) {
+        return priceFor(item, data, false);
+    }
+
+    public static int priceFor(Item item, TraderData data, boolean marketInfluence) {
         int base = 3;
         if (item.getMaxDamage() > 0) base += 5;
         if (item.getMaxDamage() > 500) base += 5;
@@ -315,9 +319,10 @@ public class TradeState extends PersistentState {
             base = 8;
         }
 
-        return Math.max(1, base - data.reputation / 25 + data.strength - data.tradeDiscount);
+        int normalPrice = Math.max(1, base - data.reputation / 25 + data.strength);
+        int totalDiscount = Math.min(60, data.tradeDiscount + (marketInfluence ? 10 : 0));
+        return Math.max(1, (int) Math.ceil(normalPrice * (100 - totalDiscount) / 100.0));
     }
-
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
         NbtList list = new NbtList();
