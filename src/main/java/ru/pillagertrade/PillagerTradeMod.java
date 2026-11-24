@@ -249,6 +249,7 @@ public class PillagerTradeMod implements ModInitializer {
             out.writeString(questItem.getTranslationKey());
             out.writeInt(activeQuest.amount);
             out.writeInt(activeQuest.reward);
+            out.writeInt(activeQuest.progress);
         } else if (!stock.isEmpty()) {
             long offerSeed = player.getUuid().getMostSignificantBits()
                     ^ player.getUuid().getLeastSignificantBits() ^ (day * 0x9E3779B97F4A7C15L);
@@ -259,6 +260,7 @@ public class PillagerTradeMod implements ModInitializer {
             out.writeString(displayItemName(questItem));
             out.writeInt(amount);
             out.writeInt(Math.max(1, TradeState.priceFor(questItem, data, false) * amount / 2));
+            out.writeInt(0);
         } else {
             out.writeString("");
             out.writeString("Нет доступных заданий");
